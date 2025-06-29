@@ -49,7 +49,7 @@ export class Web3DevStack extends cdk.Stack {
             commands: ['npm install -g aws-cdk', 'npm install']
           },
           build: {
-            commands: ['export AWS_DEFAULT_REGION=us-west-2', 'aws s3 sync . s3://web3-dev-app-540257590858-us-west-2 --exclude "*.ts" --exclude "node_modules/*" --exclude "cdk.out/*" --exclude "lib/*" --exclude "bin/*" --exclude "test/*" --exclude "*.json" --include "app.js"']
+            commands: ['export AWS_DEFAULT_REGION=us-west-2', 'aws s3 sync . s3://web3-dev-app-540257590858-us-west-2 --exclude "*" --include "*.html" --include "*.css" --include "app.js"', 'aws cloudfront create-invalidation --distribution-id dvwha8x1q83ra --paths "/*" || true']
           }
         }
       }),
@@ -68,6 +68,16 @@ export class Web3DevStack extends cdk.Stack {
     
     buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
       actions: ['cloudformation:*', 'iam:*'],
+      resources: ['*']
+    }));
+    
+    buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      actions: ['sts:AssumeRole'],
+      resources: [`arn:aws:iam::${this.account}:role/cdk-*`]
+    }));
+    
+    buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      actions: ['cloudfront:CreateInvalidation'],
       resources: ['*']
     }));
 
