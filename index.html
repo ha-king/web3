@@ -15,6 +15,7 @@
                 <option value="apechain">ApeChain</option>
             </select>
             <button id="connectWallet" class="btn">Connect Wallet</button>
+            <button id="sendTransaction" class="btn" disabled>Send Transaction</button>
             <div id="walletInfo" class="wallet-info hidden">
                 <p><span id="currentNetwork"></span> | <span id="walletAddress"></span> | <span id="walletBalance"></span> <span id="balanceSymbol">ETH</span></p>
             </div>
@@ -22,10 +23,6 @@
     </nav>
     
     <main class="main-content">
-        <div class="actions">
-            <button id="sendTransaction" class="btn" disabled>Send Transaction</button>
-        </div>
-        
         <div id="nftContainer" class="nft-container hidden"></div>
     </main>
     <script src="app.js"></script>
