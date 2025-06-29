@@ -56,6 +56,11 @@ export class Web3DevStack extends cdk.Stack {
       environment: { buildImage: codebuild.LinuxBuildImage.STANDARD_7_0 }
     });
 
+    buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      actions: ['ssm:GetParameter'],
+      resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/cdk-bootstrap/*`]
+    }));
+
     new codepipeline.Pipeline(this, 'Web3DevPipeline', {
       pipelineName: 'Web3-Dev-Pipeline',
       stages: [
