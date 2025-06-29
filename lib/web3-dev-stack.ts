@@ -44,12 +44,8 @@ export class Web3DevStack extends cdk.Stack {
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
         phases: {
-          install: {
-            'runtime-versions': { nodejs: '18' },
-            commands: ['npm install -g aws-cdk', 'npm install']
-          },
           build: {
-            commands: ['export AWS_DEFAULT_REGION=us-west-2', 'aws s3 sync . s3://web3-dev-app-540257590858-us-west-2 --exclude "*" --include "*.html" --include "*.css" --include "app.js"', 'aws cloudfront create-invalidation --distribution-id dvwha8x1q83ra --paths "/*" || true']
+            commands: ['aws s3 sync . s3://web3-dev-app-540257590858-us-west-2 --exclude "*" --include "*.html" --include "*.css" --include "app.js"', 'aws cloudfront create-invalidation --distribution-id dvwha8x1q83ra --paths "/*" || true']
           }
         }
       }),
