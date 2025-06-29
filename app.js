@@ -308,8 +308,20 @@ function showNFTModal(index) {
     const nft = window.nftData[index];
     const modal = document.getElementById('nftModal');
     
-    document.getElementById('modalImage').src = nft.image;
-    document.getElementById('modalTitle').textContent = nft.name;
+    const imageSection = `
+        <img id="modalImage" class="modal-image" src="${nft.image}" alt="${nft.name}">
+        ${nft.attributes && nft.attributes.length > 0 ? `<div class="metadata-section">
+            <h4>Attributes</h4>
+            <div class="attributes-grid">
+                ${nft.attributes.map(attr => `
+                    <div class="attribute-item">
+                        <div class="attribute-trait">${attr.trait_type}</div>
+                        <div class="attribute-value">${attr.value}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>` : ''}
+    `;
     
     const metadataHtml = `
         <div class="metadata-section">
@@ -330,21 +342,18 @@ function showNFTModal(index) {
                 <div class="metadata-value">${nft.description}</div>
             </div>
         </div>` : ''}
-        
-        ${nft.attributes && nft.attributes.length > 0 ? `<div class="metadata-section">
-            <h4>Attributes</h4>
-            <div class="attributes-grid">
-                ${nft.attributes.map(attr => `
-                    <div class="attribute-item">
-                        <div class="attribute-trait">${attr.trait_type}</div>
-                        <div class="attribute-value">${attr.value}</div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>` : ''}
     `;
     
-    document.getElementById('modalMetadata').innerHTML = metadataHtml;
+    document.querySelector('.modal-body').innerHTML = `
+        <div class="modal-image-section">
+            ${imageSection}
+        </div>
+        <div class="modal-info">
+            <h3>${nft.name}</h3>
+            ${metadataHtml}
+        </div>
+    `;
+    
     modal.classList.remove('hidden');
 }
 
