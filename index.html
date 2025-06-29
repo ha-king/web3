@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Web3 Application</h1>
+        <div class="wallet-section">
+            <select id="networkSelect" class="network-select">
+                <option value="ethereum">Ethereum</option>
+                <option value="apechain">ApeChain</option>
+            </select>
+            <button id="connectWallet" class="btn">Connect Wallet</button>
+            <div id="walletInfo" class="wallet-info hidden">
+                <p>Network: <span id="currentNetwork"></span></p>
+                <p>Connected: <span id="walletAddress"></span></p>
+                <p>Balance: <span id="walletBalance"></span> <span id="balanceSymbol">ETH</span></p>
+            </div>
+        </div>
+        <div class="actions">
+            <button id="sendTransaction" class="btn" disabled>Send Transaction</button>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
