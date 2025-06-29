@@ -52,7 +52,7 @@ export class Web3DevStack extends cdk.Stack {
     
     buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
       actions: ['s3:*'],
-      resources: ['arn:aws:s3:::cdk-*', 'arn:aws:s3:::cdk-*/*']
+      resources: ['arn:aws:s3:::cdk-*', 'arn:aws:s3:::cdk-*/*', `arn:aws:s3:::${bucket.bucketName}`, `arn:aws:s3:::${bucket.bucketName}/*`]
     }));
     
     buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
