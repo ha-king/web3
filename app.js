@@ -118,7 +118,11 @@ async function loadNFTs() {
     const nftContainer = document.getElementById('nftContainer');
     if (!nftContainer) return;
     
-    nftContainer.innerHTML = '<p>Loading ApeCoin NFTs...</p>';
+    nftContainer.innerHTML = `
+        <div class="coin-loader">
+            <div class="coin"></div>
+            <div class="loading-text">Loading ApeCoin NFTs...</div>
+        </div>`;
     
     try {
         const allTokens = [];
@@ -177,7 +181,11 @@ async function loadNFTs() {
                                         allTokens.push({ contract, tokenId, ...metadata });
                                     }
                                     
-                                    nftContainer.innerHTML = `<p>Found ${allTokens.length}/${tokenCount} NFTs...</p>`;
+                                    nftContainer.innerHTML = `
+                                        <div class="coin-loader">
+                                            <div class="coin"></div>
+                                            <div class="loading-text">Found ${allTokens.length}/${tokenCount} NFTs...</div>
+                                        </div>`;
                                 }
                             }
                         }

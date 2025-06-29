@@ -145,3 +145,45 @@ body {
     color: #718096;
     font-weight: 500;
 }
+
+.coin-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem;
+}
+
+.coin {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    border-radius: 50%;
+    position: relative;
+    animation: coinFlip 1.5s infinite;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.coin::before {
+    content: '$';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: bold;
+    color: #b8860b;
+}
+
+@keyframes coinFlip {
+    0%, 100% { transform: rotateY(0deg) scale(1); }
+    25% { transform: rotateY(90deg) scale(0.8); }
+    50% { transform: rotateY(180deg) scale(1); }
+    75% { transform: rotateY(270deg) scale(0.8); }
+}
+
+.loading-text {
+    margin-top: 1rem;
+    font-size: 18px;
+    color: #666;
+    font-weight: 500;
+}
