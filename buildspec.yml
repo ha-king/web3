@@ -5,6 +5,7 @@ phases:
       nodejs: 18
     commands:
       - npm install -g aws-cdk
+      - ls -la
       - npm install
   build:
     commands:
