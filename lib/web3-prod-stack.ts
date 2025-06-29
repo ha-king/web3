@@ -8,18 +8,17 @@ import * as codepipeline_actions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import { Construct } from 'constructs';
 
-export class Web3DevStack extends cdk.Stack {
+export class Web3ProdStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // S3 and CloudFront for app hosting
-    const bucket = new s3.Bucket(this, 'Web3DevAppBucket', {
-      bucketName: `web3-dev-app-${this.account}-${this.region}`,
+    const bucket = new s3.Bucket(this, 'Web3ProdAppBucket', {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true
     });
 
-    const distribution = new cloudfront.Distribution(this, 'Web3DevDistribution', {
+    const distribution = new cloudfront.Distribution(this, 'Web3ProdDistribution', {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
@@ -27,7 +26,7 @@ export class Web3DevStack extends cdk.Stack {
       defaultRootObject: 'index.html'
     });
 
-    new s3deploy.BucketDeployment(this, 'DeployWeb3DevApp', {
+    new s3deploy.BucketDeployment(this, 'DeployWeb3ProdApp', {
       sources: [s3deploy.Source.asset('.', {
         exclude: ['*.ts', 'node_modules', 'cdk.out', 'lib', 'bin', 'test', '*.json', '!app.js']
       })],
@@ -40,7 +39,7 @@ export class Web3DevStack extends cdk.Stack {
     // CI/CD Pipeline
     const sourceOutput = new codepipeline.Artifact();
 
-    const buildProject = new codebuild.PipelineProject(this, 'Web3DevBuildProject', {
+    const buildProject = new codebuild.PipelineProject(this, 'Web3ProdBuildProject', {
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
         phases: {
@@ -49,15 +48,15 @@ export class Web3DevStack extends cdk.Stack {
             commands: ['npm install -g aws-cdk', 'npm install']
           },
           build: {
-            commands: ['npm run build', 'npx cdk deploy Web3DevStack --require-approval never']
+            commands: ['npm run build', 'npx cdk deploy Web3ProdStack --require-approval never']
           }
         }
       }),
       environment: { buildImage: codebuild.LinuxBuildImage.STANDARD_7_0 }
     });
 
-    new codepipeline.Pipeline(this, 'Web3DevPipeline', {
-      pipelineName: 'Web3-Dev-Pipeline',
+    new codepipeline.Pipeline(this, 'Web3ProdPipeline', {
+      pipelineName: 'Web3-Prod-Pipeline',
       stages: [
         {
           stageName: 'Source',
@@ -66,7 +65,7 @@ export class Web3DevStack extends cdk.Stack {
               actionName: 'GitHub_Source',
               owner: 'ha-king',
               repo: 'web3',
-              branch: 'dev',
+              branch: 'main',
               oauthToken: cdk.SecretValue.secretsManager('github-token'),
               output: sourceOutput
             })
@@ -85,9 +84,9 @@ export class Web3DevStack extends cdk.Stack {
       ]
     });
 
-    new cdk.CfnOutput(this, 'DevWebsiteURL', {
+    new cdk.CfnOutput(this, 'ProdWebsiteURL', {
       value: `https://${distribution.distributionDomainName}`,
-      description: 'Web3 Dev App URL'
+      description: 'Web3 Prod App URL'
     });
   }
 }
