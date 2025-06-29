@@ -3,28 +3,41 @@ let userAccount;
 let currentNetwork = 'ethereum';
 let cognitoUser;
 
-// Cognito configuration - replace with your actual values
-const poolData = {
-    UserPoolId: 'us-east-1_example123', // Replace with your User Pool ID
-    ClientId: '1234567890abcdefghijklmnop' // Replace with your App Client ID
+// Cognito configuration
+const COGNITO_CONFIG = {
+    region: 'us-east-1',
+    userPoolId: 'us-east-1_XXXXXXXXX', // Will be set after pool creation
+    clientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX' // Will be set after pool creation
 };
 
-// Initialize Cognito User Pool with error handling
+// Initialize Cognito
 let userPool = null;
 let cognitoAvailable = false;
 
-// Check if Cognito is properly configured
-if (poolData.UserPoolId !== 'us-east-1_example123' && poolData.ClientId !== '1234567890abcdefghijklmnop') {
+function initializeCognito() {
+    // Check if we have real Cognito configuration
+    if (COGNITO_CONFIG.userPoolId.includes('XXXXX') || COGNITO_CONFIG.clientId.includes('XXXXX')) {
+        console.log('Demo mode: Run cognito-setup.js to create user pool');
+        return false;
+    }
+
     try {
+        const poolData = {
+            UserPoolId: COGNITO_CONFIG.userPoolId,
+            ClientId: COGNITO_CONFIG.clientId
+        };
         userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
         cognitoAvailable = true;
         console.log('Cognito initialized successfully');
+        return true;
     } catch (error) {
-        console.log('Cognito initialization failed:', error.message);
+        console.error('Cognito initialization failed:', error);
+        return false;
     }
-} else {
-    console.log('Using demo mode - replace Cognito pool configuration for production');
 }
+
+// Initialize on load
+cognitoAvailable = initializeCognito();
 
 const NETWORKS = {
     ethereum: {
@@ -445,22 +458,27 @@ function checkAuthState() {
             cognitoUser = userPool.getCurrentUser();
             if (cognitoUser) {
                 cognitoUser.getSession((err, session) => {
-                    if (err || !session.isValid()) {
+                    if (err) {
+                        console.log('Session error:', err);
                         showAuthContainer();
-                    } else {
+                    } else if (session && session.isValid()) {
+                        console.log('Valid session found');
                         showMainContent();
+                    } else {
+                        console.log('Invalid session');
+                        showAuthContainer();
                     }
                 });
             } else {
+                console.log('No current user');
                 showAuthContainer();
             }
         } catch (error) {
-            console.log('Cognito session check failed:', error);
+            console.log('Auth check failed:', error);
             showAuthContainer();
         }
     } else {
-        // Demo mode - skip auth
-        console.log('Demo mode active - skipping authentication');
+        console.log('Demo mode: Skipping authentication');
         showMainContent();
     }
 }
@@ -481,6 +499,16 @@ function signUp() {
     const email = document.getElementById('signUpEmail').value;
     const password = document.getElementById('signUpPassword').value;
     
+    if (!email || !password) {
+        alert('Please enter email and password');
+        return;
+    }
+
+    if (!cognitoAvailable) {
+        alert('Demo mode: Authentication not configured. Run cognito-setup.js first.');
+        return;
+    }
+    
     const attributeList = [
         new AmazonCognitoIdentity.CognitoUserAttribute({
             Name: 'email',
@@ -490,24 +518,35 @@ function signUp() {
     
     userPool.signUp(email, password, attributeList, null, (err, result) => {
         if (err) {
-            alert(err.message);
+            alert('Sign up failed: ' + err.message);
             return;
         }
         cognitoUser = result.user;
         document.getElementById('signUpForm').classList.add('hidden');
         document.getElementById('confirmForm').classList.remove('hidden');
+        alert('Verification code sent to your email!');
     });
 }
 
 function confirmSignUp() {
     const confirmationCode = document.getElementById('confirmCode').value;
     
+    if (!confirmationCode) {
+        alert('Please enter the confirmation code');
+        return;
+    }
+
+    if (!cognitoUser) {
+        alert('No user to confirm. Please sign up first.');
+        return;
+    }
+    
     cognitoUser.confirmRegistration(confirmationCode, true, (err, result) => {
         if (err) {
-            alert(err.message);
+            alert('Confirmation failed: ' + err.message);
             return;
         }
-        alert('Account confirmed! Please sign in.');
+        alert('Account confirmed successfully! Please sign in.');
         document.getElementById('confirmForm').classList.add('hidden');
         document.getElementById('signInForm').classList.remove('hidden');
     });
@@ -516,6 +555,16 @@ function confirmSignUp() {
 function signIn() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+    
+    if (!email || !password) {
+        alert('Please enter email and password');
+        return;
+    }
+
+    if (!cognitoAvailable) {
+        alert('Demo mode: Authentication not configured. Run cognito-setup.js first.');
+        return;
+    }
     
     const authenticationData = {
         Username: email,
@@ -533,19 +582,22 @@ function signIn() {
     
     cognitoUser.authenticateUser(authenticationDetails, {
         onSuccess: (result) => {
+            console.log('Authentication successful');
             showMainContent();
         },
         onFailure: (err) => {
-            alert(err.message);
+            alert('Sign in failed: ' + err.message);
         }
     });
 }
 
 function signOut() {
-    if (cognitoUser) {
+    if (cognitoAvailable && cognitoUser) {
         cognitoUser.signOut();
-        showAuthContainer();
+        console.log('User signed out');
     }
+    cognitoUser = null;
+    showAuthContainer();
 }
 
 async function sendTransaction() {

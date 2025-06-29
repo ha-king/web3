@@ -1,26 +1,26 @@
 {
-  "name": "web3-cdk",
-  "version": "0.1.0",
-  "bin": {
-    "web3-cdk": "bin/web3-cdk.js"
-  },
+  "name": "ind3x-web3-app",
+  "version": "1.0.0",
+  "description": "IND3X Web3 Assets Dashboard with AWS Cognito Authentication",
+  "main": "app.js",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "test": "jest",
-    "cdk": "cdk"
-  },
-  "devDependencies": {
-    "@types/jest": "^29.5.14",
-    "@types/node": "22.7.9",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.2.5",
-    "aws-cdk": "2.1019.2",
-    "ts-node": "^10.9.2",
-    "typescript": "~5.6.3"
+    "setup-cognito": "node cognito-setup.js",
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.201.0",
-    "constructs": "^10.0.0"
-  }
+    "aws-sdk": "^2.1490.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "web3",
+    "nft",
+    "cognito",
+    "authentication",
+    "ethereum",
+    "solana",
+    "apechain"
+  ],
+  "author": "IND3X",
+  "license": "MIT"
 }
