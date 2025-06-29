@@ -161,6 +161,14 @@ body {
     position: relative;
     animation: coinFlip 1.5s infinite;
     box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    background-size: 40px 40px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.coin.has-logo {
+    background: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .coin::before {
@@ -172,6 +180,10 @@ body {
     font-size: 24px;
     font-weight: bold;
     color: #b8860b;
+}
+
+.coin.has-logo::before {
+    display: none;
 }
 
 @keyframes coinFlip {

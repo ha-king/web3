@@ -8,14 +8,23 @@ const NETWORKS = {
         chainName: 'Ethereum Mainnet',
         nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
         rpcUrls: ['https://mainnet.infura.io/v3/'],
-        blockExplorerUrls: ['https://etherscan.io']
+        blockExplorerUrls: ['https://etherscan.io'],
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDI0QzE4LjYyNzQgMjQgMjQgMTguNjI3NCAyNCAxMkMyNCA1LjM3MjU4IDE4LjYyNzQgMCAxMiAwQzUuMzcyNTggMCAwIDUuMzcyNTggMCAxMkMwIDE4LjYyNzQgNS4zNzI1OCAyNCAxMiAyNFoiIGZpbGw9IiM2MjdFRUEiLz4KPHBhdGggZD0iTTEyLjM3MzQgM1Y5LjY1MjVMMTguMzY1NiAxMi4yMTc1TDEyLjM3MzQgM1oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuNiIvPgo8cGF0aCBkPSJNMTIuMzczNCAzTDYuMzgxMjUgMTIuMjE3NUwxMi4zNzM0IDkuNjUyNVYzWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+'
     },
     apechain: {
         chainId: '0x8157',
         chainName: 'ApeChain',
         nativeCurrency: { name: 'ApeCoin', symbol: 'APE', decimals: 18 },
         rpcUrls: ['https://apechain.calderachain.xyz/http'],
-        blockExplorerUrls: ['https://apechain.calderachain.xyz/']
+        blockExplorerUrls: ['https://apechain.calderachain.xyz/'],
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiNGRkQ3MDAiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD4KPC9zdmc+'
+    },
+    solana: {
+        chainName: 'Solana Mainnet',
+        nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
+        rpcUrls: ['https://api.mainnet-beta.solana.com'],
+        blockExplorerUrls: ['https://explorer.solana.com'],
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiM5OTQ1RkYiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPnNvbDwvdGV4dD4KPC9zdmc+'
     }
 };
 
@@ -38,6 +47,11 @@ connectWalletBtn.addEventListener('click', connectWallet);
 sendTransactionBtn.addEventListener('click', sendTransaction);
 
 async function connectWallet() {
+    if (currentNetwork === 'solana') {
+        await connectSolanaWallet();
+        return;
+    }
+    
     if (typeof window.ethereum !== 'undefined') {
         try {
             const networkConfig = NETWORKS[currentNetwork];
@@ -72,7 +86,7 @@ async function connectWallet() {
             connectWalletBtn.disabled = true;
             sendTransactionBtn.disabled = false;
             
-            if (currentNetwork === 'apechain') {
+            if (currentNetwork === 'apechain' || currentNetwork === 'solana') {
                 document.getElementById('nftContainer').classList.remove('hidden');
                 await loadNFTs();
             } else {
@@ -110,6 +124,33 @@ async function switchToNetwork(chainId) {
     }
 }
 
+async function connectSolanaWallet() {
+    try {
+        if (typeof window.solana !== 'undefined' && window.solana.isPhantom) {
+            const response = await window.solana.connect();
+            userAccount = response.publicKey.toString();
+            
+            walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
+            currentNetworkSpan.textContent = 'Solana Mainnet';
+            balanceSymbol.textContent = 'SOL';
+            walletBalance.textContent = '0.0000';
+            
+            walletInfo.classList.remove('hidden');
+            connectWalletBtn.textContent = 'Connected';
+            connectWalletBtn.disabled = true;
+            sendTransactionBtn.disabled = false;
+            
+            document.getElementById('nftContainer').classList.remove('hidden');
+            await loadNFTs();
+        } else {
+            alert('Please install Phantom wallet for Solana');
+        }
+    } catch (error) {
+        console.error('Solana wallet connection failed:', error);
+        alert('Failed to connect Solana wallet');
+    }
+}
+
 const APECHAIN_NFT_CONTRACTS = [
     '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'  // ApeCoin Collection on ApeChain
 ];
@@ -118,10 +159,14 @@ async function loadNFTs() {
     const nftContainer = document.getElementById('nftContainer');
     if (!nftContainer) return;
     
+    const networkConfig = NETWORKS[currentNetwork];
+    const coinClass = networkConfig.logo ? 'coin has-logo' : 'coin';
+    const coinStyle = networkConfig.logo ? `style="background-image: url('${networkConfig.logo}')"` : '';
+    
     nftContainer.innerHTML = `
         <div class="coin-loader">
-            <div class="coin"></div>
-            <div class="loading-text">Loading ApeCoin NFTs...</div>
+            <div class="${coinClass}" ${coinStyle}></div>
+            <div class="loading-text">Loading ${networkConfig.chainName} NFTs...</div>
         </div>`;
     
     try {
@@ -183,7 +228,7 @@ async function loadNFTs() {
                                     
                                     nftContainer.innerHTML = `
                                         <div class="coin-loader">
-                                            <div class="coin"></div>
+                                            <div class="${coinClass}" ${coinStyle}></div>
                                             <div class="loading-text">Found ${allTokens.length}/${tokenCount} NFTs...</div>
                                         </div>`;
                                 }
