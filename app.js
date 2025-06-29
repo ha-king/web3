@@ -119,30 +119,7 @@ async function loadNFTs() {
     try {
         const allTokens = [];
         
-        // Try Magic Eden API first
-        try {
-            const response = await fetch(`https://api-mainnet.magiceden.dev/v2/wallets/${userAccount}/tokens?collectionSymbol=apechain&limit=100`);
-            if (response.ok) {
-                const data = await response.json();
-                const apeTokens = data.filter(token => 
-                    token.mintAddress?.toLowerCase() === APECHAIN_NFT_CONTRACTS[0].toLowerCase()
-                );
-                
-                for (const token of apeTokens) {
-                    allTokens.push({
-                        contract: token.mintAddress,
-                        tokenId: token.tokenId || token.name?.match(/#(\d+)/)?.[1] || 'Unknown',
-                        name: token.name || `ApeCoin NFT #${token.tokenId}`,
-                        image: token.image || generateFallbackImage(token.tokenId)
-                    });
-                }
-            }
-        } catch (e) {
-            console.log('Magic Eden API failed:', e);
-        }
-        
-        // Fallback to contract calls if Magic Eden fails
-        if (allTokens.length === 0) {
+        // Scan contract directly
             for (const contract of APECHAIN_NFT_CONTRACTS) {
                 try {
                     const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
@@ -156,16 +133,18 @@ async function loadNFTs() {
                     
                     if (tokenCount > 0) {
                         // Try to get tokens by checking a range of token IDs
-                        for (let tokenId = 1; tokenId <= 10000; tokenId++) {
-                            try {
-                                const ownerData = '0x6352211e' + tokenId.toString(16).padStart(64, '0');
-                                const owner = await window.ethereum.request({
-                                    method: 'eth_call',
-                                    params: [{ to: contract, data: ownerData }, 'latest']
-                                });
-                                
-                                const ownerAddress = '0x' + owner.slice(-40);
-                                if (ownerAddress.toLowerCase() === userAccount.toLowerCase()) {
+                        // Check tokens in batches for efficiency
+                        const batchSize = 50;
+                        for (let start = 1; start <= 10000 && allTokens.length < tokenCount; start += batchSize) {
+                            const promises = [];
+                            for (let tokenId = start; tokenId < start + batchSize && tokenId <= 10000; tokenId++) {
+                                promises.push(checkTokenOwnership(contract, tokenId));
+                            }
+                            
+                            const results = await Promise.allSettled(promises);
+                            for (let i = 0; i < results.length; i++) {
+                                if (results[i].status === 'fulfilled' && results[i].value) {
+                                    const tokenId = start + i;
                                     const metadata = await getTokenMetadata(contract, tokenId);
                                     allTokens.push({ 
                                         contract, 
@@ -173,11 +152,7 @@ async function loadNFTs() {
                                         name: metadata.name,
                                         image: metadata.image
                                     });
-                                    
-                                    if (allTokens.length >= tokenCount) break;
                                 }
-                            } catch (e) {
-                                // Token doesn't exist or other error, continue
                             }
                         }
                     }
@@ -244,6 +219,21 @@ async function getTokenMetadata(contract, tokenId) {
 
 function generateFallbackImage(tokenId) {
     return `data:image/svg+xml;base64,${btoa(`<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#f0f0f0"/><text x="50%" y="45%" font-family="Arial" font-size="16" fill="#666" text-anchor="middle">#${tokenId}</text><text x="50%" y="60%" font-family="Arial" font-size="12" fill="#999" text-anchor="middle">ApeCoin NFT</text></svg>`)}`;
+}
+
+async function checkTokenOwnership(contract, tokenId) {
+    try {
+        const ownerData = '0x6352211e' + tokenId.toString(16).padStart(64, '0');
+        const owner = await window.ethereum.request({
+            method: 'eth_call',
+            params: [{ to: contract, data: ownerData }, 'latest']
+        });
+        
+        const ownerAddress = '0x' + owner.slice(-40);
+        return ownerAddress.toLowerCase() === userAccount.toLowerCase();
+    } catch {
+        return false;
+    }
 }
 
 function decodeString(hex) {
