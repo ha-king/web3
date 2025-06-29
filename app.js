@@ -42,10 +42,14 @@ async function connectWallet() {
         try {
             const networkConfig = NETWORKS[currentNetwork];
             
-            if (currentNetwork === 'apechain') {
-                await addNetwork(networkConfig);
-            } else {
-                await switchToNetwork(networkConfig.chainId);
+            try {
+                if (currentNetwork === 'apechain') {
+                    await addNetwork(networkConfig);
+                } else {
+                    await switchToNetwork(networkConfig.chainId);
+                }
+            } catch (networkError) {
+                console.log('Network switch failed, continuing anyway:', networkError.message);
             }
             
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
