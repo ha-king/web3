@@ -27,7 +27,7 @@ export class PipelineStack extends cdk.Stack {
           build: {
             commands: [
               'npm run build',
-              'npx cdk deploy --require-approval never'
+              'npx cdk deploy Web3ProdStack --require-approval never'
             ]
           }
         }

@@ -10,4 +10,4 @@ phases:
   build:
     commands:
       - npm run build
-      - npx cdk deploy Web3CdkStack --require-approval never
+      - npx cdk deploy Web3ProdStack --require-approval never
