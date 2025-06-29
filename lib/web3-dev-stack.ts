@@ -41,14 +41,7 @@ export class Web3DevStack extends cdk.Stack {
     const sourceOutput = new codepipeline.Artifact();
 
     const buildProject = new codebuild.PipelineProject(this, 'Web3DevBuildProject', {
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          build: {
-            commands: ['aws s3 sync . s3://web3-dev-app-540257590858-us-west-2 --exclude "*" --include "*.html" --include "*.css" --include "app.js"', 'aws cloudfront create-invalidation --distribution-id dvwha8x1q83ra --paths "/*" || true']
-          }
-        }
-      }),
+      buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec-dev.yml'),
       environment: { buildImage: codebuild.LinuxBuildImage.STANDARD_7_0 }
     });
 

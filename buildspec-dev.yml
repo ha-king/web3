@@ -1,0 +1,6 @@
+version: 0.2
+phases:
+  build:
+    commands:
+      - aws s3 sync . s3://web3-dev-app-540257590858-us-west-2 --exclude "*" --include "*.html" --include "*.css" --include "app.js"
+      - aws cloudfront create-invalidation --distribution-id dvwha8x1q83ra --paths "/*" || true
