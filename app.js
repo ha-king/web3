@@ -17,7 +17,7 @@ const NETWORKS = {
         nativeCurrency: { name: 'ApeCoin', symbol: 'APE', decimals: 18 },
         rpcUrls: ['https://apechain.calderachain.xyz/http'],
         blockExplorerUrls: ['https://apechain.calderachain.xyz/'],
-        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiNGRkQ3MDAiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD4KPC9zdmc+'
+        logo: 'https://cryptologos.cc/logos/apecoin-ape-ape-logo.png'
     },
     solana: {
         chainName: 'Solana Mainnet',
