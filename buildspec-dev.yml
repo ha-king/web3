@@ -3,4 +3,5 @@ phases:
   build:
     commands:
       - aws s3 sync . s3://web3-dev-app-540257590858-us-west-2 --exclude "*" --include "*.html" --include "*.css" --include "app.js"
-      - aws cloudfront create-invalidation --distribution-id dvwha8x1q83ra --paths "/*" || true
+      - DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, 'web3-dev-app-540257590858-us-west-2')].Id" --output text)
+      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*" || true
