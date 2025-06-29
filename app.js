@@ -1,6 +1,15 @@
 let web3;
 let userAccount;
 let currentNetwork = 'ethereum';
+let cognitoUser;
+
+// Cognito configuration
+AWS.config.region = 'us-west-2';
+const poolData = {
+    UserPoolId: 'us-west-2_XXXXXXXXX', // Replace with your User Pool ID
+    ClientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX' // Replace with your App Client ID
+};
+const userPool = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
 
 const NETWORKS = {
     ethereum: {
@@ -45,6 +54,23 @@ networkSelect.addEventListener('change', (e) => {
 });
 connectWalletBtn.addEventListener('click', connectWallet);
 sendTransactionBtn.addEventListener('click', sendTransaction);
+
+// Auth event listeners
+document.getElementById('signInBtn').addEventListener('click', signIn);
+document.getElementById('signUpBtn').addEventListener('click', signUp);
+document.getElementById('confirmBtn').addEventListener('click', confirmSignUp);
+document.getElementById('signOutBtn').addEventListener('click', signOut);
+document.getElementById('showSignUp').addEventListener('click', () => {
+    document.getElementById('signInForm').classList.add('hidden');
+    document.getElementById('signUpForm').classList.remove('hidden');
+});
+document.getElementById('showSignIn').addEventListener('click', () => {
+    document.getElementById('signUpForm').classList.add('hidden');
+    document.getElementById('signInForm').classList.remove('hidden');
+});
+
+// Check if user is already authenticated
+checkAuthState();
 
 async function connectWallet() {
     if (currentNetwork === 'solana') {
@@ -395,6 +421,104 @@ function decodeString(hex) {
         return decodeURIComponent(data.replace(/[0-9a-f]{2}/g, '%$&'));
     } catch {
         return '';
+    }
+}
+
+function checkAuthState() {
+    cognitoUser = userPool.getCurrentUser();
+    if (cognitoUser) {
+        cognitoUser.getSession((err, session) => {
+            if (err || !session.isValid()) {
+                showAuthContainer();
+            } else {
+                showMainContent();
+            }
+        });
+    } else {
+        showAuthContainer();
+    }
+}
+
+function showAuthContainer() {
+    document.getElementById('authContainer').classList.remove('hidden');
+    document.getElementById('mainContent').classList.add('hidden');
+    document.querySelector('.top-nav').classList.add('hidden');
+}
+
+function showMainContent() {
+    document.getElementById('authContainer').classList.add('hidden');
+    document.getElementById('mainContent').classList.remove('hidden');
+    document.querySelector('.top-nav').classList.remove('hidden');
+}
+
+function signUp() {
+    const email = document.getElementById('signUpEmail').value;
+    const password = document.getElementById('signUpPassword').value;
+    
+    const attributeList = [
+        new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute({
+            Name: 'email',
+            Value: email
+        })
+    ];
+    
+    userPool.signUp(email, password, attributeList, null, (err, result) => {
+        if (err) {
+            alert(err.message);
+            return;
+        }
+        cognitoUser = result.user;
+        document.getElementById('signUpForm').classList.add('hidden');
+        document.getElementById('confirmForm').classList.remove('hidden');
+    });
+}
+
+function confirmSignUp() {
+    const confirmationCode = document.getElementById('confirmCode').value;
+    
+    cognitoUser.confirmRegistration(confirmationCode, true, (err, result) => {
+        if (err) {
+            alert(err.message);
+            return;
+        }
+        alert('Account confirmed! Please sign in.');
+        document.getElementById('confirmForm').classList.add('hidden');
+        document.getElementById('signInForm').classList.remove('hidden');
+    });
+}
+
+function signIn() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    const authenticationData = {
+        Username: email,
+        Password: password
+    };
+    
+    const authenticationDetails = new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails(authenticationData);
+    
+    const userData = {
+        Username: email,
+        Pool: userPool
+    };
+    
+    cognitoUser = new AWSCognito.CognitoIdentityServiceProvider.CognitoUser(userData);
+    
+    cognitoUser.authenticateUser(authenticationDetails, {
+        onSuccess: (result) => {
+            showMainContent();
+        },
+        onFailure: (err) => {
+            alert(err.message);
+        }
+    });
+}
+
+function signOut() {
+    if (cognitoUser) {
+        cognitoUser.signOut();
+        showAuthContainer();
     }
 }
 
