@@ -66,7 +66,7 @@ export class Web3DevStack extends cdk.Stack {
     }));
     
     buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
-      actions: ['cloudfront:CreateInvalidation'],
+      actions: ['cloudfront:CreateInvalidation', 'cloudfront:ListDistributions'],
       resources: ['*']
     }));
 
