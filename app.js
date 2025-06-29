@@ -199,8 +199,8 @@ async function loadNFTs() {
             nftContainer.innerHTML = `
                 <h3>Your ApeCoin NFTs (${allTokens.length} items)</h3>
                 <div class="nft-gallery">
-                    ${allTokens.map(token => 
-                        `<div class="nft-card">
+                    ${allTokens.map((token, index) => 
+                        `<div class="nft-card" onclick="showNFTModal(${index})">
                             <img src="${token.image}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
                             <div class="nft-info">
                                 <h4>${token.name || `#${token.tokenId}`}</h4>
@@ -209,6 +209,8 @@ async function loadNFTs() {
                         </div>`
                     ).join('')}
                 </div>`;
+            
+            window.nftData = allTokens;
         } else {
             nftContainer.innerHTML = '<p>No ApeCoin NFTs found in your wallet</p>';
         }
@@ -238,7 +240,10 @@ async function getTokenMetadata(contract, tokenId) {
                 name: metadata.name || `ApeCoin NFT #${tokenId}`,
                 image: metadata.image?.startsWith('ipfs://') ? 
                     metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/') : 
-                    metadata.image || generateFallbackImage(tokenId)
+                    metadata.image || generateFallbackImage(tokenId),
+                description: metadata.description,
+                attributes: metadata.attributes || [],
+                tokenURI: tokenURI
             };
         }
     } catch (e) {
@@ -247,9 +252,49 @@ async function getTokenMetadata(contract, tokenId) {
     
     return {
         name: `ApeCoin NFT #${tokenId}`,
-        image: generateFallbackImage(tokenId)
+        image: generateFallbackImage(tokenId),
+        description: 'ApeCoin NFT from ApeChain',
+        attributes: [],
+        tokenURI: ''
     };
 }
+
+function showNFTModal(index) {
+    const nft = window.nftData[index];
+    const modal = document.getElementById('nftModal');
+    
+    document.getElementById('modalImage').src = nft.image;
+    document.getElementById('modalTitle').textContent = nft.name;
+    
+    const metadataHtml = `
+        <div class="metadata-item">
+            <span class="metadata-label">Token ID:</span> ${nft.tokenId}
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Contract:</span> ${nft.contract}
+        </div>
+        ${nft.description ? `<div class="metadata-item">
+            <span class="metadata-label">Description:</span> ${nft.description}
+        </div>` : ''}
+        ${nft.attributes.length > 0 ? `<div class="metadata-item">
+            <span class="metadata-label">Attributes:</span><br>
+            ${nft.attributes.map(attr => `<span style="display:block;margin:0.25rem 0;">${attr.trait_type}: ${attr.value}</span>`).join('')}
+        </div>` : ''}
+    `;
+    
+    document.getElementById('modalMetadata').innerHTML = metadataHtml;
+    modal.classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('nftModal');
+    const closeBtn = document.querySelector('.close');
+    
+    closeBtn.onclick = () => modal.classList.add('hidden');
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+    };
+});
 
 function generateFallbackImage(tokenId) {
     return `data:image/svg+xml;base64,${btoa(`<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#f0f0f0"/><text x="50%" y="45%" font-family="Arial" font-size="16" fill="#666" text-anchor="middle">#${tokenId}</text><text x="50%" y="60%" font-family="Arial" font-size="12" fill="#999" text-anchor="middle">ApeCoin NFT</text></svg>`)}`;
