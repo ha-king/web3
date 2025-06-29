@@ -137,26 +137,42 @@ async function loadNFTs() {
                     
                     if (tokenCount > 0) {
                         // Try to get tokens by checking a range of token IDs
-                        // Check tokens in batches for efficiency
-                        const batchSize = 50;
-                        for (let start = 1; start <= 10000 && allTokens.length < tokenCount; start += batchSize) {
+                        // Optimized batch scanning
+                        const batchSize = 100;
+                        const maxRange = Math.min(5000, tokenCount * 10); // Limit scan range
+                        
+                        for (let start = 1; start <= maxRange && allTokens.length < tokenCount; start += batchSize) {
                             const promises = [];
-                            for (let tokenId = start; tokenId < start + batchSize && tokenId <= 10000; tokenId++) {
+                            for (let tokenId = start; tokenId < start + batchSize && tokenId <= maxRange; tokenId++) {
                                 promises.push(checkTokenOwnership(contract, tokenId));
                             }
                             
                             const results = await Promise.allSettled(promises);
+                            const ownedTokens = [];
+                            
                             for (let i = 0; i < results.length; i++) {
                                 if (results[i].status === 'fulfilled' && results[i].value) {
-                                    const tokenId = start + i;
-                                    const metadata = await getTokenMetadata(contract, tokenId);
-                                    allTokens.push({ 
-                                        contract, 
-                                        tokenId, 
-                                        name: metadata.name,
-                                        image: metadata.image
-                                    });
+                                    ownedTokens.push(start + i);
                                 }
+                            }
+                            
+                            // Load metadata in parallel
+                            const metadataPromises = ownedTokens.map(tokenId => 
+                                getTokenMetadata(contract, tokenId).then(metadata => ({
+                                    contract, tokenId, ...metadata
+                                }))
+                            );
+                            
+                            const metadataResults = await Promise.allSettled(metadataPromises);
+                            metadataResults.forEach(result => {
+                                if (result.status === 'fulfilled') {
+                                    allTokens.push(result.value);
+                                }
+                            });
+                            
+                            // Update UI with progress
+                            if (allTokens.length > 0) {
+                                nftContainer.innerHTML = `<p>Loading... Found ${allTokens.length}/${tokenCount} NFTs</p>`;
                             }
                         }
                     }
