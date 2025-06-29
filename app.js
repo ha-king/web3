@@ -10,12 +10,20 @@ const poolData = {
 };
 
 // Initialize Cognito User Pool with error handling
-let userPool;
-try {
-    userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-} catch (error) {
-    console.log('Cognito initialization failed, using demo mode');
-    userPool = null;
+let userPool = null;
+let cognitoAvailable = false;
+
+// Check if Cognito is properly configured
+if (poolData.UserPoolId !== 'us-east-1_example123' && poolData.ClientId !== '1234567890abcdefghijklmnop') {
+    try {
+        userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        cognitoAvailable = true;
+        console.log('Cognito initialized successfully');
+    } catch (error) {
+        console.log('Cognito initialization failed:', error.message);
+    }
+} else {
+    console.log('Using demo mode - replace Cognito pool configuration for production');
 }
 
 const NETWORKS = {
@@ -432,7 +440,7 @@ function decodeString(hex) {
 }
 
 function checkAuthState() {
-    if (userPool) {
+    if (cognitoAvailable && userPool) {
         try {
             cognitoUser = userPool.getCurrentUser();
             if (cognitoUser) {
@@ -451,7 +459,8 @@ function checkAuthState() {
             showAuthContainer();
         }
     } else {
-        // Demo mode - skip auth for now
+        // Demo mode - skip auth
+        console.log('Demo mode active - skipping authentication');
         showMainContent();
     }
 }
