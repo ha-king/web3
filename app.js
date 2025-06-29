@@ -119,49 +119,71 @@ async function loadNFTs() {
     try {
         const allTokens = [];
         
-        for (const contract of APECHAIN_NFT_CONTRACTS) {
-            try {
-                // Get balance of ERC-721 tokens
-                const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
-                const balance = await window.ethereum.request({
-                    method: 'eth_call',
-                    params: [{ to: contract, data: balanceData }, 'latest']
-                });
+        // Try Magic Eden API first
+        try {
+            const response = await fetch(`https://api-mainnet.magiceden.dev/v2/wallets/${userAccount}/tokens?collectionSymbol=apechain&limit=100`);
+            if (response.ok) {
+                const data = await response.json();
+                const apeTokens = data.filter(token => 
+                    token.mintAddress?.toLowerCase() === APECHAIN_NFT_CONTRACTS[0].toLowerCase()
+                );
                 
-                const tokenCount = parseInt(balance, 16);
-                console.log(`Found ${tokenCount} tokens for contract ${contract}`);
-                
-                if (tokenCount > 0) {
-                    // Get each token owned by the user
-                    for (let i = 0; i < tokenCount; i++) {
-                        try {
-                            // tokenOfOwnerByIndex(address owner, uint256 index)
-                            const tokenByIndexData = '0x2f745c59' + 
-                                userAccount.slice(2).padStart(64, '0') + 
-                                i.toString(16).padStart(64, '0');
-                            
-                            const tokenIdHex = await window.ethereum.request({
-                                method: 'eth_call',
-                                params: [{ to: contract, data: tokenByIndexData }, 'latest']
-                            });
-                            
-                            const tokenId = parseInt(tokenIdHex, 16);
-                            console.log(`Loading metadata for token ${tokenId}`);
-                            
-                            const metadata = await getTokenMetadata(contract, tokenId);
-                            allTokens.push({ 
-                                contract, 
-                                tokenId, 
-                                name: metadata.name || `ApeCoin NFT #${tokenId}`,
-                                image: metadata.image
-                            });
-                        } catch (e) {
-                            console.log(`Failed to load token ${i}:`, e);
+                for (const token of apeTokens) {
+                    allTokens.push({
+                        contract: token.mintAddress,
+                        tokenId: token.tokenId || token.name?.match(/#(\d+)/)?.[1] || 'Unknown',
+                        name: token.name || `ApeCoin NFT #${token.tokenId}`,
+                        image: token.image || generateFallbackImage(token.tokenId)
+                    });
+                }
+            }
+        } catch (e) {
+            console.log('Magic Eden API failed:', e);
+        }
+        
+        // Fallback to contract calls if Magic Eden fails
+        if (allTokens.length === 0) {
+            for (const contract of APECHAIN_NFT_CONTRACTS) {
+                try {
+                    const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
+                    const balance = await window.ethereum.request({
+                        method: 'eth_call',
+                        params: [{ to: contract, data: balanceData }, 'latest']
+                    });
+                    
+                    const tokenCount = parseInt(balance, 16);
+                    console.log(`Contract balance: ${tokenCount} tokens`);
+                    
+                    if (tokenCount > 0) {
+                        // Try to get tokens by checking a range of token IDs
+                        for (let tokenId = 1; tokenId <= 10000; tokenId++) {
+                            try {
+                                const ownerData = '0x6352211e' + tokenId.toString(16).padStart(64, '0');
+                                const owner = await window.ethereum.request({
+                                    method: 'eth_call',
+                                    params: [{ to: contract, data: ownerData }, 'latest']
+                                });
+                                
+                                const ownerAddress = '0x' + owner.slice(-40);
+                                if (ownerAddress.toLowerCase() === userAccount.toLowerCase()) {
+                                    const metadata = await getTokenMetadata(contract, tokenId);
+                                    allTokens.push({ 
+                                        contract, 
+                                        tokenId, 
+                                        name: metadata.name,
+                                        image: metadata.image
+                                    });
+                                    
+                                    if (allTokens.length >= tokenCount) break;
+                                }
+                            } catch (e) {
+                                // Token doesn't exist or other error, continue
+                            }
                         }
                     }
+                } catch (e) {
+                    console.log('Contract check failed:', e);
                 }
-            } catch (e) {
-                console.log('Contract check failed:', contract, e);
             }
         }
         
@@ -189,21 +211,6 @@ async function loadNFTs() {
 
 async function getTokenMetadata(contract, tokenId) {
     try {
-        // Try Magic Eden API for ApeChain
-        const meResponse = await fetch(`https://api-mainnet.magiceden.dev/v2/tokens/apechain/${contract}:${tokenId}`);
-        if (meResponse.ok) {
-            const meData = await meResponse.json();
-            return {
-                name: meData.name || `ApeCoin NFT #${tokenId}`,
-                image: meData.image || meData.image_url || generateFallbackImage(tokenId)
-            };
-        }
-    } catch (e) {
-        console.log('Magic Eden API failed:', e);
-    }
-    
-    try {
-        // Get tokenURI from ERC-721 contract
         const uriData = '0xc87b56dd' + tokenId.toString(16).padStart(64, '0');
         const uriHex = await window.ethereum.request({
             method: 'eth_call',
@@ -211,8 +218,6 @@ async function getTokenMetadata(contract, tokenId) {
         });
         
         const tokenURI = decodeString(uriHex);
-        console.log(`Token URI for ${tokenId}:`, tokenURI);
-        
         if (tokenURI && (tokenURI.startsWith('http') || tokenURI.startsWith('ipfs'))) {
             const metadataUrl = tokenURI.startsWith('ipfs://') ? 
                 tokenURI.replace('ipfs://', 'https://ipfs.io/ipfs/') : tokenURI;
@@ -228,7 +233,7 @@ async function getTokenMetadata(contract, tokenId) {
             };
         }
     } catch (e) {
-        console.log('Contract metadata failed:', e);
+        console.log('Metadata fetch failed:', e);
     }
     
     return {
