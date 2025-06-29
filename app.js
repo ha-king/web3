@@ -312,18 +312,35 @@ function showNFTModal(index) {
     document.getElementById('modalTitle').textContent = nft.name;
     
     const metadataHtml = `
-        <div class="metadata-item">
-            <span class="metadata-label">Token ID:</span> ${nft.tokenId}
+        <div class="metadata-section">
+            <h4>Token Details</h4>
+            <div class="metadata-item">
+                <span class="metadata-label">Token ID</span>
+                <div class="metadata-value">${nft.tokenId}</div>
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-label">Contract Address</span>
+                <div class="metadata-value">${nft.contract}</div>
+            </div>
         </div>
-        <div class="metadata-item">
-            <span class="metadata-label">Contract:</span> ${nft.contract}
-        </div>
-        ${nft.description ? `<div class="metadata-item">
-            <span class="metadata-label">Description:</span> ${nft.description}
+        
+        ${nft.description ? `<div class="metadata-section">
+            <h4>Description</h4>
+            <div class="metadata-item">
+                <div class="metadata-value">${nft.description}</div>
+            </div>
         </div>` : ''}
-        ${nft.attributes.length > 0 ? `<div class="metadata-item">
-            <span class="metadata-label">Attributes:</span><br>
-            ${nft.attributes.map(attr => `<span style="display:block;margin:0.25rem 0;">${attr.trait_type}: ${attr.value}</span>`).join('')}
+        
+        ${nft.attributes && nft.attributes.length > 0 ? `<div class="metadata-section">
+            <h4>Attributes</h4>
+            <div class="attributes-grid">
+                ${nft.attributes.map(attr => `
+                    <div class="attribute-item">
+                        <div class="attribute-trait">${attr.trait_type}</div>
+                        <div class="attribute-value">${attr.value}</div>
+                    </div>
+                `).join('')}
+            </div>
         </div>` : ''}
     `;
     

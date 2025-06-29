@@ -258,21 +258,78 @@ body {
 }
 
 .modal-info h3 {
-    margin: 0 0 1rem 0;
-    color: #333;
-    font-size: 24px;
+    margin: 0 0 1.5rem 0;
+    color: #2d3748;
+    font-size: 28px;
+    font-weight: 700;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+}
+
+.metadata-section {
+    margin-bottom: 1.5rem;
+}
+
+.metadata-section h4 {
+    margin: 0 0 0.75rem 0;
+    color: #4a5568;
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .metadata-item {
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-    background: #f8f9fa;
-    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .metadata-label {
-    font-weight: bold;
-    color: #555;
+    font-weight: 600;
+    color: #2d3748;
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 14px;
+}
+
+.metadata-value {
+    color: #4a5568;
+    font-size: 15px;
+    line-height: 1.4;
+    word-break: break-all;
+}
+
+.attributes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.attribute-item {
+    background: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.attribute-trait {
+    font-size: 12px;
+    color: #718096;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.attribute-value {
+    font-size: 16px;
+    color: #2d3748;
+    font-weight: 600;
 }
 
 @media (max-width: 768px) {
