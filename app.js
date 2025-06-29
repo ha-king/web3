@@ -129,7 +129,7 @@ async function loadNFTs() {
                 
                 const count = parseInt(balance, 16);
                 if (count > 0) {
-                    for (let i = 0; i < Math.min(count, 10); i++) {
+                    for (let i = 0; i < count; i++) {
                         try {
                             const tokenData = '0x2f745c59' + userAccount.slice(2).padStart(64, '0') + i.toString(16).padStart(64, '0');
                             const tokenId = await window.ethereum.request({
@@ -141,12 +141,7 @@ async function loadNFTs() {
                             const metadata = await getTokenMetadata(contract, id);
                             allTokens.push({ contract, tokenId: id, ...metadata });
                         } catch (e) {
-                            allTokens.push({ 
-                                contract, 
-                                tokenId: i + 1, 
-                                name: `ApeCoin NFT #${i + 1}`,
-                                image: generateFallbackImage(i + 1)
-                            });
+                            console.log(`Failed to load token ${i}:`, e);
                         }
                     }
                 }
@@ -157,20 +152,20 @@ async function loadNFTs() {
         
         if (allTokens.length > 0) {
             nftContainer.innerHTML = `
+                <h3>Your ApeCoin NFTs (${allTokens.length} items)</h3>
                 <div class="nft-gallery">
                     ${allTokens.map(token => 
                         `<div class="nft-card">
                             <img src="${token.image}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
                             <div class="nft-info">
                                 <h4>${token.name || `#${token.tokenId}`}</h4>
-                                <p>ID: ${token.tokenId}</p>
-                                <p class="contract-addr">${token.contract.slice(0,6)}...${token.contract.slice(-4)}</p>
+                                <p>Token ID: ${token.tokenId}</p>
                             </div>
                         </div>`
                     ).join('')}
                 </div>`;
         } else {
-            nftContainer.innerHTML = '<p>No ApeCoin NFTs found on ApeChain</p>';
+            nftContainer.innerHTML = '<p>No ApeCoin NFTs found in your wallet</p>';
         }
     } catch (error) {
         nftContainer.innerHTML = '<p>Error loading NFTs</p>';
