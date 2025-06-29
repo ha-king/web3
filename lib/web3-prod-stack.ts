@@ -48,7 +48,7 @@ export class Web3ProdStack extends cdk.Stack {
             commands: ['npm install -g aws-cdk', 'npm install']
           },
           build: {
-            commands: ['npm run build', 'npx cdk deploy Web3ProdStack --require-approval never']
+            commands: ['export AWS_DEFAULT_REGION=us-west-2', 'npm run build', 'npx cdk deploy Web3ProdStack --require-approval never']
           }
         }
       }),

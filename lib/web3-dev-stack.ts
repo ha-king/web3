@@ -49,7 +49,7 @@ export class Web3DevStack extends cdk.Stack {
             commands: ['npm install -g aws-cdk', 'npm install']
           },
           build: {
-            commands: ['npm run build', 'npx cdk deploy Web3DevStack --require-approval never']
+            commands: ['export AWS_DEFAULT_REGION=us-west-2', 'npm run build', 'npx cdk deploy Web3DevStack --require-approval never']
           }
         }
       }),
