@@ -32,6 +32,14 @@ body {
     margin: 0 auto;
 }
 
+.dashboard-title {
+    text-align: center;
+    color: #333;
+    margin-bottom: 2rem;
+    font-size: 28px;
+    font-weight: 600;
+}
+
 .btn {
     background: #4CAF50;
     color: white;
