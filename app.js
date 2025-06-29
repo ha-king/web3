@@ -181,6 +181,29 @@ async function loadNFTs() {
         }
     } catch (error) {
         nftContainer.innerHTML = '<p>Error loading NFTs</p>';
+        console.error('NFT loading error:', error);
+    }
+}
+        
+        if (allTokens.length > 0) {
+            nftContainer.innerHTML = `
+                <h3>Your ApeCoin NFTs (${allTokens.length} items)</h3>
+                <div class="nft-gallery">
+                    ${allTokens.map(token => 
+                        `<div class="nft-card">
+                            <img src="${token.image}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
+                            <div class="nft-info">
+                                <h4>${token.name || `#${token.tokenId}`}</h4>
+                                <p>Token ID: ${token.tokenId}</p>
+                            </div>
+                        </div>`
+                    ).join('')}
+                </div>`;
+        } else {
+            nftContainer.innerHTML = '<p>No ApeCoin NFTs found in your wallet</p>';
+        }
+    } catch (error) {
+        nftContainer.innerHTML = '<p>Error loading NFTs</p>';
     }
 }
 
