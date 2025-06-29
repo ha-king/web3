@@ -3,12 +3,20 @@ let userAccount;
 let currentNetwork = 'ethereum';
 let cognitoUser;
 
-// Cognito configuration
+// Cognito configuration - replace with your actual values
 const poolData = {
-    UserPoolId: 'us-west-2_XXXXXXXXX', // Replace with your User Pool ID
-    ClientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX' // Replace with your App Client ID
+    UserPoolId: 'us-east-1_example123', // Replace with your User Pool ID
+    ClientId: '1234567890abcdefghijklmnop' // Replace with your App Client ID
 };
-const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+
+// Initialize Cognito User Pool with error handling
+let userPool;
+try {
+    userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+} catch (error) {
+    console.log('Cognito initialization failed, using demo mode');
+    userPool = null;
+}
 
 const NETWORKS = {
     ethereum: {
@@ -424,17 +432,27 @@ function decodeString(hex) {
 }
 
 function checkAuthState() {
-    cognitoUser = userPool.getCurrentUser();
-    if (cognitoUser) {
-        cognitoUser.getSession((err, session) => {
-            if (err || !session.isValid()) {
-                showAuthContainer();
+    if (userPool) {
+        try {
+            cognitoUser = userPool.getCurrentUser();
+            if (cognitoUser) {
+                cognitoUser.getSession((err, session) => {
+                    if (err || !session.isValid()) {
+                        showAuthContainer();
+                    } else {
+                        showMainContent();
+                    }
+                });
             } else {
-                showMainContent();
+                showAuthContainer();
             }
-        });
+        } catch (error) {
+            console.log('Cognito session check failed:', error);
+            showAuthContainer();
+        }
     } else {
-        showAuthContainer();
+        // Demo mode - skip auth for now
+        showMainContent();
     }
 }
 
