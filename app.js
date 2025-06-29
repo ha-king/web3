@@ -4,12 +4,11 @@ let currentNetwork = 'ethereum';
 let cognitoUser;
 
 // Cognito configuration
-AWS.config.region = 'us-west-2';
 const poolData = {
     UserPoolId: 'us-west-2_XXXXXXXXX', // Replace with your User Pool ID
     ClientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX' // Replace with your App Client ID
 };
-const userPool = new AWSCognito.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
+const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
 const NETWORKS = {
     ethereum: {
@@ -456,7 +455,7 @@ function signUp() {
     const password = document.getElementById('signUpPassword').value;
     
     const attributeList = [
-        new AWSCognito.CognitoIdentityServiceProvider.CognitoUserAttribute({
+        new AmazonCognitoIdentity.CognitoUserAttribute({
             Name: 'email',
             Value: email
         })
@@ -496,14 +495,14 @@ function signIn() {
         Password: password
     };
     
-    const authenticationDetails = new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails(authenticationData);
+    const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
     
     const userData = {
         Username: email,
         Pool: userPool
     };
     
-    cognitoUser = new AWSCognito.CognitoIdentityServiceProvider.CognitoUser(userData);
+    cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
     
     cognitoUser.authenticateUser(authenticationDetails, {
         onSuccess: (result) => {
