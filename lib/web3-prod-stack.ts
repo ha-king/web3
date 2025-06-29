@@ -59,6 +59,11 @@ export class Web3ProdStack extends cdk.Stack {
       actions: ['ssm:GetParameter'],
       resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/cdk-bootstrap/*`]
     }));
+    
+    buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      actions: ['s3:*'],
+      resources: ['arn:aws:s3:::cdk-*', 'arn:aws:s3:::cdk-*/*']
+    }));
 
     new codepipeline.Pipeline(this, 'Web3ProdPipeline', {
       pipelineName: 'Web3-Prod-Pipeline',
