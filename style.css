@@ -5,66 +5,66 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #0066FF 0%, #FFD700 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f8f9fa;
     margin: 0;
     min-height: 100vh;
 }
 
 .top-nav {
-    background: linear-gradient(90deg, #0066FF 0%, #004ACC 100%);
+    background: #0052ff;
     padding: 1rem 2rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .top-nav h1 {
-    color: #FFD700;
+    color: white;
     margin: 0;
     font-size: 24px;
-    font-weight: bold;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    font-weight: 500;
+    letter-spacing: -0.5px;
 }
 
 .main-content {
     padding: 2rem;
     max-width: 1200px;
-    margin: 0 auto;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
-    margin-top: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    margin: 2rem auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid #e6ebf1;
 }
 
 .dashboard-title {
     text-align: center;
-    color: #0066FF;
+    color: #1a1a1a;
     margin-bottom: 2rem;
-    font-size: 28px;
-    font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 102, 255, 0.2);
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -1px;
 }
 
 .btn {
-    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-    color: #0066FF;
+    background: #0052ff;
+    color: white;
     border: none;
     padding: 12px 24px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 16px;
-    margin: 10px;
-    font-weight: bold;
-    transition: all 0.3s;
-    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,82,255,0.2);
+    text-transform: none;
 }
 
 .btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #FFA500 0%, #FFD700 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+    background: #0040cc;
+    box-shadow: 0 4px 8px rgba(0,82,255,0.3);
+    transform: translateY(-1px);
 }
 
 .btn:disabled {
@@ -79,12 +79,12 @@ body {
 }
 
 .wallet-info {
-    background: rgba(255, 215, 0, 0.2);
-    padding: 0.5rem 1rem;
+    background: rgba(0,82,255,0.08);
+    padding: 0.75rem 1rem;
     border-radius: 8px;
     font-size: 14px;
-    color: white;
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #1a1a1a;
+    border: 1px solid rgba(0,82,255,0.12);
 }
 
 .wallet-info p {
@@ -96,11 +96,14 @@ body {
 }
 
 .network-select {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    padding: 10px 16px;
+    border: 1px solid #e6ebf1;
+    border-radius: 8px;
     font-size: 14px;
     min-width: 120px;
+    background: white;
+    color: #1a1a1a;
+    font-weight: 500;
 }
 
 .nft-container {
@@ -119,17 +122,17 @@ body {
 .nft-card {
     background: white;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,102,255,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
-    border: 2px solid transparent;
+    border: 1px solid #e6ebf1;
 }
 
 .nft-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(255,215,0,0.3);
-    border-color: #FFD700;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border-color: #0052ff;
 }
 
 .nft-image {
@@ -231,12 +234,14 @@ body {
 
 .modal-content {
     background: white;
-    border-radius: 12px;
+    border-radius: 16px;
     max-width: 900px;
     width: 95%;
     max-height: 85vh;
     overflow-y: auto;
     position: relative;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.16);
+    border: 1px solid #e6ebf1;
 }
 
 .close {
