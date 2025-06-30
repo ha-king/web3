@@ -58,10 +58,16 @@ const APECHAIN_NFT_CONTRACTS = [
 
 const BASE_NFT_CONTRACTS = [
     {
-        address: '0x1234567890123456789012345678901234567890',
-        name: 'Base NFT Collection',
-        description: 'NFT Collection on Base Network',
-        creator: '0x1234567890123456789012345678901234567890'
+        address: '0xd4307e0acd12cf46fd6cf93bc264f5d5d1598792',
+        name: 'Base Gods',
+        description: 'Base Gods NFT Collection',
+        creator: '0xd4307e0acd12cf46fd6cf93bc264f5d5d1598792'
+    },
+    {
+        address: '0x1538c5ddbb073638b7cd1ae41ec2d9f9a4c24a7e',
+        name: 'Coinbase Wallet NFT',
+        description: 'Coinbase Wallet NFT Collection',
+        creator: '0x1538c5ddbb073638b7cd1ae41ec2d9f9a4c24a7e'
     }
 ];
 
@@ -267,7 +273,8 @@ async function loadNFTs() {
                 });
                 
                 const tokenCount = parseInt(balance, 16);
-                console.log(`${contractInfo.name} balance: ${tokenCount} tokens`);
+                console.log(`${contractInfo.name} (${contractInfo.address}) balance: ${tokenCount} tokens`);
+                console.log(`Network: ${currentNetwork}, User: ${userAccount}`);
                 
                 if (tokenCount > 0) {
                     // Fetch total supply from MagicEden
@@ -346,7 +353,8 @@ async function loadNFTs() {
         
         if (allTokens.length === 0) {
             const networkName = currentNetwork === 'base' ? 'Base' : 'ApeCoin';
-            nftContainer.innerHTML = `<p>No ${networkName} NFTs found in your wallet</p>`;
+            nftContainer.innerHTML = `<p>No ${networkName} NFTs found in your wallet</p>
+                <p><small>Note: Only scanning specific collections. Your NFT may be from a different contract.</small></p>`;
         }
     } catch (error) {
         nftContainer.innerHTML = '<p>Error loading NFTs</p>';
