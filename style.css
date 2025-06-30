@@ -95,7 +95,7 @@ body {
     display: none !important;
 }
 
-.network-select, .sort-select {
+.network-select, .filter-select {
     padding: 10px 16px;
     border: 1px solid #e6ebf1;
     border-radius: 8px;
@@ -106,7 +106,7 @@ body {
     font-weight: 500;
 }
 
-.sort-select {
+.filter-select {
     background: rgba(255,255,255,0.9);
     border: 1px solid rgba(255,255,255,0.3);
     color: white;

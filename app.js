@@ -337,10 +337,9 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
                 <span class="stat">Total Supply: <strong>${contractInfo.totalSupply.toLocaleString()}</strong></span>
                 ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
-                <select id="sortSelect" class="sort-select" onchange="sortGallery()">
-                    <option value="tokenId">Sort by Token ID</option>
-                    <option value="name">Sort by Name</option>
-                    ${getSortOptions(tokens)}
+                <select id="filterSelect" class="filter-select" onchange="filterGallery()">
+                    <option value="all">Show All</option>
+                    ${getFilterOptions(tokens)}
                 </select>
             </div>
         </div>
@@ -562,35 +561,43 @@ function showMainContent() {
     document.querySelector('.top-nav').classList.remove('hidden');
 }
 
-function getSortOptions(tokens) {
-    const attributes = new Set();
+function getFilterOptions(tokens) {
+    const attributeValues = new Map();
     tokens.forEach(token => {
         if (token.attributes) {
-            token.attributes.forEach(attr => attributes.add(attr.trait_type));
+            token.attributes.forEach(attr => {
+                if (!attributeValues.has(attr.trait_type)) {
+                    attributeValues.set(attr.trait_type, new Set());
+                }
+                attributeValues.get(attr.trait_type).add(attr.value);
+            });
         }
     });
-    return Array.from(attributes).map(attr => `<option value="${attr}">${attr}</option>`).join('');
+    
+    let options = '';
+    attributeValues.forEach((values, traitType) => {
+        values.forEach(value => {
+            options += `<option value="${traitType}:${value}">${traitType}: ${value}</option>`;
+        });
+    });
+    return options;
 }
 
-function sortGallery() {
-    const sortBy = document.getElementById('sortSelect').value;
+function filterGallery() {
+    const filterBy = document.getElementById('filterSelect').value;
     if (!window.nftData) return;
     
-    const sorted = [...window.nftData].sort((a, b) => {
-        if (sortBy === 'tokenId') {
-            return parseInt(a.tokenId) - parseInt(b.tokenId);
-        } else if (sortBy === 'name') {
-            return (a.name || '').localeCompare(b.name || '');
-        } else {
-            const aAttr = a.attributes?.find(attr => attr.trait_type === sortBy)?.value || '';
-            const bAttr = b.attributes?.find(attr => attr.trait_type === sortBy)?.value || '';
-            return aAttr.toString().localeCompare(bAttr.toString());
-        }
-    });
+    let filtered = window.nftData;
+    if (filterBy !== 'all') {
+        const [traitType, value] = filterBy.split(':');
+        filtered = window.nftData.filter(token => 
+            token.attributes?.some(attr => attr.trait_type === traitType && attr.value === value)
+        );
+    }
     
     const gallery = document.querySelector('.nft-gallery');
     if (gallery) {
-        gallery.innerHTML = sorted.map((token, index) => 
+        gallery.innerHTML = filtered.map((token, index) => 
             `<div class="nft-card" onclick="showNFTModal(${window.nftData.indexOf(token)})">
                 <img src="${getCachedImageUrl(token.image)}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
                 <div class="nft-info">
