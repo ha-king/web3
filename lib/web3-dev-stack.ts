@@ -41,8 +41,15 @@ export class Web3DevStack extends cdk.Stack {
     const sourceOutput = new codepipeline.Artifact();
 
     const buildProject = new codebuild.PipelineProject(this, 'Web3DevBuildProject', {
-      buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec-dev.yml'),
-      environment: { buildImage: codebuild.LinuxBuildImage.STANDARD_7_0 }
+      buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml'),
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+        environmentVariables: {
+          BUCKET_NAME: {
+            value: bucket.bucketName
+          }
+        }
+      }
     });
 
     buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
