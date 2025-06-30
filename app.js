@@ -3,6 +3,49 @@ let userAccount;
 let currentNetwork = 'ethereum';
 // Authentication disabled for dev environment
 
+// NFT Cache
+const NFT_CACHE = {
+    metadata: new Map(),
+    images: new Map(),
+    CACHE_DURATION: 24 * 60 * 60 * 1000, // 24 hours
+    
+    setMetadata(key, data) {
+        this.metadata.set(key, {
+            data,
+            timestamp: Date.now()
+        });
+    },
+    
+    getMetadata(key) {
+        const cached = this.metadata.get(key);
+        if (cached && (Date.now() - cached.timestamp) < this.CACHE_DURATION) {
+            return cached.data;
+        }
+        this.metadata.delete(key);
+        return null;
+    },
+    
+    setImage(url, blob) {
+        this.images.set(url, {
+            blob,
+            objectUrl: URL.createObjectURL(blob),
+            timestamp: Date.now()
+        });
+    },
+    
+    getImage(url) {
+        const cached = this.images.get(url);
+        if (cached && (Date.now() - cached.timestamp) < this.CACHE_DURATION) {
+            return cached.objectUrl;
+        }
+        if (cached) {
+            URL.revokeObjectURL(cached.objectUrl);
+            this.images.delete(url);
+        }
+        return null;
+    }
+};
+
 const APECHAIN_NFT_CONTRACTS = [
     '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'  // ApeCoin Collection on ApeChain
 ];
@@ -253,7 +296,7 @@ async function loadNFTs() {
                 <div class="nft-gallery">
                     ${allTokens.map((token, index) => 
                         `<div class="nft-card" onclick="showNFTModal(${index})">
-                            <img src="${token.image}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
+                            <img src="${getCachedImageUrl(token.image)}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
                             <div class="nft-info">
                                 <h4>${token.name || `#${token.tokenId}`}</h4>
                                 <p>Token ID: ${token.tokenId}</p>
@@ -273,6 +316,14 @@ async function loadNFTs() {
 }
 
 async function getTokenMetadata(contract, tokenId) {
+    const cacheKey = `${contract}-${tokenId}`;
+    
+    // Check cache first
+    const cached = NFT_CACHE.getMetadata(cacheKey);
+    if (cached) {
+        return cached;
+    }
+    
     try {
         const uriData = '0xc87b56dd' + tokenId.toString(16).padStart(64, '0');
         const uriHex = await window.ethereum.request({
@@ -288,27 +339,43 @@ async function getTokenMetadata(contract, tokenId) {
             const response = await fetch(metadataUrl);
             const metadata = await response.json();
             
-            return {
+            const processedImage = metadata.image?.startsWith('ipfs://') ? 
+                metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/') : 
+                metadata.image || generateFallbackImage(tokenId);
+            
+            const result = {
                 name: metadata.name || `ApeCoin NFT #${tokenId}`,
-                image: metadata.image?.startsWith('ipfs://') ? 
-                    metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/') : 
-                    metadata.image || generateFallbackImage(tokenId),
+                image: processedImage,
                 description: metadata.description,
                 attributes: metadata.attributes || [],
                 tokenURI: tokenURI
             };
+            
+            // Cache the metadata
+            NFT_CACHE.setMetadata(cacheKey, result);
+            
+            // Preload and cache the image
+            if (processedImage && !processedImage.startsWith('data:')) {
+                preloadImage(processedImage);
+            }
+            
+            return result;
         }
     } catch (e) {
         console.log('Metadata fetch failed:', e);
     }
     
-    return {
+    const fallback = {
         name: `ApeCoin NFT #${tokenId}`,
         image: generateFallbackImage(tokenId),
         description: 'ApeCoin NFT from ApeChain',
         attributes: [],
         tokenURI: ''
     };
+    
+    // Cache fallback too
+    NFT_CACHE.setMetadata(cacheKey, fallback);
+    return fallback;
 }
 
 function showNFTModal(index) {
@@ -351,9 +418,12 @@ function showNFTModal(index) {
         </div>` : ''}
     `;
     
+    const cachedImageUrl = getCachedImageUrl(nft.image);
+    const updatedImageSection = imageSection.replace(nft.image, cachedImageUrl);
+    
     document.querySelector('.modal-body').innerHTML = `
         <div class="modal-image-section">
-            ${imageSection}
+            ${updatedImageSection}
         </div>
         <div class="modal-info">
             <h3>${nft.name}</h3>
@@ -385,6 +455,26 @@ function closeModal() {
     if (modal) {
         modal.classList.add('hidden');
     }
+}
+
+async function preloadImage(url) {
+    try {
+        // Check if already cached
+        if (NFT_CACHE.getImage(url)) return;
+        
+        const response = await fetch(url);
+        if (response.ok) {
+            const blob = await response.blob();
+            NFT_CACHE.setImage(url, blob);
+        }
+    } catch (e) {
+        console.log('Image preload failed:', url, e);
+    }
+}
+
+function getCachedImageUrl(url) {
+    const cached = NFT_CACHE.getImage(url);
+    return cached || url;
 }
 
 function generateFallbackImage(tokenId) {
