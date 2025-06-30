@@ -316,7 +316,11 @@ async function loadNFTs() {
                             const batchEnd = Math.min(i + batchSize - 1, end);
                             
                             for (let tokenId = i; tokenId <= batchEnd; tokenId++) {
-                                batch.push(checkTokenOwnership(contractInfo.address, tokenId));
+                                if (currentNetwork === 'base') {
+                                    batch.push(checkERC1155Balance(contractInfo.address, tokenId));
+                                } else {
+                                    batch.push(checkTokenOwnership(contractInfo.address, tokenId));
+                                }
                             }
                             
                             const results = await Promise.allSettled(batch);
@@ -586,6 +590,22 @@ async function checkTokenOwnership(contract, tokenId) {
         
         const ownerAddress = '0x' + owner.slice(-40);
         return ownerAddress.toLowerCase() === userAccount.toLowerCase();
+    } catch {
+        return false;
+    }
+}
+
+async function checkERC1155Balance(contract, tokenId) {
+    try {
+        const balanceData = '0x00fdd58e' + 
+            userAccount.slice(2).padStart(64, '0') + 
+            tokenId.toString(16).padStart(64, '0');
+        const balance = await window.ethereum.request({
+            method: 'eth_call',
+            params: [{ to: contract, data: balanceData }, 'latest']
+        });
+        
+        return parseInt(balance, 16) > 0;
     } catch {
         return false;
     }
