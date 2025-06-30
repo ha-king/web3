@@ -39,19 +39,15 @@ export class Web3ProdStack extends cdk.Stack {
     const sourceOutput = new codepipeline.Artifact();
 
     const buildProject = new codebuild.PipelineProject(this, 'Web3BuildProject', {
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          build: {
-            commands: [
-              `aws s3 sync . s3://${bucket.bucketName} --exclude "*" --include "*.html" --include "*.css" --include "app.js"`,
-              `DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, '${bucket.bucketName}')].Id" --output text)`,
-              'aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*" || true'
-            ]
+      buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml'),
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+        environmentVariables: {
+          BUCKET_NAME: {
+            value: bucket.bucketName
           }
         }
-      }),
-      environment: { buildImage: codebuild.LinuxBuildImage.STANDARD_7_0 }
+      }
     });
 
     buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
