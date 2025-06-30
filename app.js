@@ -353,6 +353,7 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
                 ${totalSupply ? `<span class="stat">Total Supply: <strong>${totalSupply.toLocaleString()}</strong></span>` : ''}
                 ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
+                ${isComplete ? `<button class="trade-btn" onclick="showTradeModal()">Trade</button>` : ''}
                 ${isComplete ? `<select id="filterSelect" class="filter-select" onchange="filterGallery()">
                     <option value="all">Show All</option>
                     ${getFilterOptions(tokens)}
@@ -626,6 +627,98 @@ function filterGallery() {
                 </div>
             </div>`
         ).join('');
+    }
+}
+
+function showTradeModal() {
+    const modal = document.getElementById('tradeModal');
+    if (!modal) {
+        createTradeModal();
+    }
+    document.getElementById('tradeModal').classList.remove('hidden');
+}
+
+function createTradeModal() {
+    const modalHtml = `
+        <div id="tradeModal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close" onclick="closeTradeModal()">&times;</span>
+                <div class="modal-body">
+                    <h3>Transfer NFTs</h3>
+                    <div class="trade-form">
+                        <label for="recipientAddress">Recipient Address:</label>
+                        <input type="text" id="recipientAddress" placeholder="0x..." class="trade-input">
+                        <div class="nft-selection">
+                            <h4>Select NFTs to Transfer:</h4>
+                            <div id="nftCheckboxes"></div>
+                        </div>
+                        <button class="btn" onclick="executeTransfer()">Transfer Selected NFTs</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    populateNFTCheckboxes();
+}
+
+function populateNFTCheckboxes() {
+    const container = document.getElementById('nftCheckboxes');
+    if (!window.nftData || !container) return;
+    
+    container.innerHTML = window.nftData.map((token, index) => 
+        `<div class="nft-checkbox">
+            <input type="checkbox" id="nft-${index}" value="${token.tokenId}">
+            <label for="nft-${index}">${token.name || `#${token.tokenId}`}</label>
+        </div>`
+    ).join('');
+}
+
+function closeTradeModal() {
+    document.getElementById('tradeModal').classList.add('hidden');
+}
+
+async function executeTransfer() {
+    const recipientAddress = document.getElementById('recipientAddress').value;
+    if (!recipientAddress || !recipientAddress.startsWith('0x')) {
+        alert('Please enter a valid recipient address');
+        return;
+    }
+    
+    const selectedTokens = [];
+    document.querySelectorAll('#nftCheckboxes input:checked').forEach(checkbox => {
+        selectedTokens.push(checkbox.value);
+    });
+    
+    if (selectedTokens.length === 0) {
+        alert('Please select at least one NFT to transfer');
+        return;
+    }
+    
+    try {
+        const contractAddress = '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266';
+        const transferContract = '0x[DEPLOYED_CONTRACT_ADDRESS]'; // Replace with deployed contract
+        
+        // Batch transfer function call
+        const data = '0x' + 'batchTransferNFTs' + 
+            contractAddress.slice(2).padStart(64, '0') +
+            selectedTokens.map(id => parseInt(id).toString(16).padStart(64, '0')).join('') +
+            recipientAddress.slice(2).padStart(64, '0');
+        
+        const txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: userAccount,
+                to: transferContract,
+                data: data,
+                gas: '0x' + (100000 * selectedTokens.length).toString(16)
+            }]
+        });
+        
+        alert(`Transfer initiated: ${txHash}`);
+        closeTradeModal();
+    } catch (error) {
+        console.error('Transfer failed:', error);
+        alert('Transfer failed: ' + error.message);
     }
 }
 

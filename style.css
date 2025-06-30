@@ -135,6 +135,55 @@ body {
     font-size: 14px;
 }
 
+.trade-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 1rem;
+}
+
+.trade-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.trade-form {
+    padding: 1rem;
+}
+
+.trade-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    margin: 0.5rem 0 1rem 0;
+}
+
+.nft-selection {
+    margin: 1rem 0;
+}
+
+.nft-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin: 0.25rem 0;
+}
+
+.nft-checkbox input[type="checkbox"] {
+    margin: 0;
+}
+
 .nft-container {
     margin-top: 2rem;
     max-width: 1200px;
