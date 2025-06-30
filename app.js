@@ -58,16 +58,16 @@ const APECHAIN_NFT_CONTRACTS = [
 
 const BASE_NFT_CONTRACTS = [
     {
-        address: '0x50f5474724e0ee42d9a4e711ccfb275809fd6d4a',
-        name: 'Base OpenSea Collection',
-        description: 'NFT Collection from OpenSea on Base',
-        creator: '0x50f5474724e0ee42d9a4e711ccfb275809fd6d4a'
+        address: '0x1a92f7381b9f03921564a437210bb9396471050c',
+        name: 'OpenSea Shared Storefront',
+        description: 'OpenSea Shared Storefront on Base',
+        creator: '0x1a92f7381b9f03921564a437210bb9396471050c'
     },
     {
-        address: '0xd4307e0acd12cf46fd6cf93bc264f5d5d1598792',
-        name: 'Base Gods',
-        description: 'Base Gods NFT Collection',
-        creator: '0xd4307e0acd12cf46fd6cf93bc264f5d5d1598792'
+        address: '0x50f5474724e0ee42d9a4e711ccfb275809fd6d4a',
+        name: 'Base Collection',
+        description: 'NFT Collection on Base',
+        creator: '0x50f5474724e0ee42d9a4e711ccfb275809fd6d4a'
     }
 ];
 
