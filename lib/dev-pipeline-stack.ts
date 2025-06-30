@@ -11,28 +11,14 @@ export class DevPipelineStack extends cdk.Stack {
     const sourceOutput = new codepipeline.Artifact();
 
     const buildProject = new codebuild.PipelineProject(this, 'Web3DevBuildProject', {
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          install: {
-            'runtime-versions': {
-              nodejs: '18'
-            },
-            commands: [
-              'npm install -g aws-cdk',
-              'npm install'
-            ]
-          },
-          build: {
-            commands: [
-              'npm run build',
-              'npx cdk deploy Web3DevStack --require-approval never'
-            ]
+      buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml'),
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+        environmentVariables: {
+          BUCKET_NAME: {
+            value: 'web3-dev-app-540257590858-us-west-2'
           }
         }
-      }),
-      environment: {
-        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0
       }
     });
 
