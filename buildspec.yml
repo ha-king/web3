@@ -9,4 +9,5 @@ phases:
   build:
     commands:
       - export AWS_DEFAULT_REGION=us-west-2
+      - echo 'Build complete - static files ready'
       - npx cdk deploy Web3ProdStack --require-approval never
