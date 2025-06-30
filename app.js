@@ -345,7 +345,8 @@ async function loadNFTs() {
         }
         
         if (allTokens.length === 0) {
-            nftContainer.innerHTML = '<p>No ApeCoin NFTs found in your wallet</p>';
+            const networkName = currentNetwork === 'base' ? 'Base' : 'ApeCoin';
+            nftContainer.innerHTML = `<p>No ${networkName} NFTs found in your wallet</p>`;
         }
     } catch (error) {
         nftContainer.innerHTML = '<p>Error loading NFTs</p>';
