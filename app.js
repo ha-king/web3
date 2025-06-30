@@ -52,7 +52,7 @@ const APECHAIN_NFT_CONTRACTS = [
         name: 'ApeCoin Collection',
         description: 'Official ApeCoin NFT Collection on ApeChain',
         totalSupply: 10000,
-        magicEdenUrl: 'https://magiceden.io/collections/apechain/apecoin-collection'
+        magicEdenUrl: 'https://magiceden.us/collections/apechain/0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'
     }
 ];
 
