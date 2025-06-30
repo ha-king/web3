@@ -1,13 +1,7 @@
 version: 0.2
 phases:
-  install:
-    runtime-versions:
-      nodejs: 18
-    commands:
-      - npm install -g aws-cdk
-      - npm install
   build:
     commands:
-      - export AWS_DEFAULT_REGION=us-west-2
-      - npm run build
-      - npx cdk deploy Web3ProdStack --require-approval never
+      - aws s3 sync . s3://web3-prod-app-540257590858-us-west-2 --exclude "*" --include "*.html" --include "*.css" --include "app.js"
+      - DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, 'web3-prod-app-540257590858-us-west-2')].Id" --output text)
+      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*" || true
