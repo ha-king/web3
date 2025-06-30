@@ -58,16 +58,19 @@ const APECHAIN_NFT_CONTRACTS = [
 
 const BASE_NFT_CONTRACTS = [
     {
-        address: '0xad3a0eeecefd100d2ff9dc55cbff11b8a2f489c2',
-        name: 'Your NFT Collection',
-        description: 'NFT Collection from transaction',
-        creator: '0xad3a0eeecefd100d2ff9dc55cbff11b8a2f489c2'
-    },
-    {
         address: '0x1a92f7381b9f03921564a437210bb9396471050c',
         name: 'OpenSea Shared Storefront',
         description: 'OpenSea Shared Storefront on Base',
         creator: '0x1a92f7381b9f03921564a437210bb9396471050c'
+    }
+];
+
+const OPTIMISM_NFT_CONTRACTS = [
+    {
+        address: '0xad3a0eeecefd100d2ff9dc55cbff11b8a2f489c2',
+        name: 'Your NFT Collection',
+        description: 'NFT Collection from Optimism',
+        creator: '0xad3a0eeecefd100d2ff9dc55cbff11b8a2f489c2'
     }
 ];
 
@@ -95,6 +98,14 @@ const NETWORKS = {
         rpcUrls: ['https://mainnet.base.org'],
         blockExplorerUrls: ['https://basescan.org'],
         logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiMwMDUyRkYiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkJBU0U8L3RleHQ+Cjwvc3ZnPg=='
+    },
+    optimism: {
+        chainId: '0xa',
+        chainName: 'OP Mainnet',
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        rpcUrls: ['https://mainnet.optimism.io'],
+        blockExplorerUrls: ['https://optimistic.etherscan.io'],
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiNGRjAwNDIiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI5IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T1A8L3RleHQ+Cjwvc3ZnPg=='
     },
     solana: {
         chainName: 'Solana Mainnet',
@@ -137,7 +148,7 @@ async function connectWallet() {
             const networkConfig = NETWORKS[currentNetwork];
             
             try {
-                if (currentNetwork === 'apechain' || currentNetwork === 'base') {
+                if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
                     await addNetwork(networkConfig);
                 } else {
                     await switchToNetwork(networkConfig.chainId);
@@ -166,7 +177,7 @@ async function connectWallet() {
             connectWalletBtn.disabled = true;
             sendTransactionBtn.disabled = false;
             
-            if (currentNetwork === 'apechain' || currentNetwork === 'base') {
+            if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
                 document.getElementById('nftContainer').classList.remove('hidden');
                 await loadNFTs();
             } else {
@@ -263,7 +274,9 @@ async function loadNFTs() {
         const allTokens = [];
         
         // Process contracts with collection info
-        const contracts = currentNetwork === 'base' ? BASE_NFT_CONTRACTS : APECHAIN_NFT_CONTRACTS;
+        const contracts = currentNetwork === 'base' ? BASE_NFT_CONTRACTS : 
+                         currentNetwork === 'optimism' ? OPTIMISM_NFT_CONTRACTS : 
+                         APECHAIN_NFT_CONTRACTS;
         for (const contractInfo of contracts) {
             try {
                 const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
@@ -316,7 +329,7 @@ async function loadNFTs() {
                             const batchEnd = Math.min(i + batchSize - 1, end);
                             
                             for (let tokenId = i; tokenId <= batchEnd; tokenId++) {
-                                if (currentNetwork === 'base') {
+                                if (currentNetwork === 'base' || currentNetwork === 'optimism') {
                                     batch.push(checkERC1155Balance(contractInfo.address, tokenId));
                                 } else {
                                     batch.push(checkTokenOwnership(contractInfo.address, tokenId));
@@ -356,7 +369,8 @@ async function loadNFTs() {
         }
         
         if (allTokens.length === 0) {
-            const networkName = currentNetwork === 'base' ? 'Base' : 'ApeCoin';
+            const networkName = currentNetwork === 'base' ? 'Base' : 
+                               currentNetwork === 'optimism' ? 'Optimism' : 'ApeCoin';
             nftContainer.innerHTML = `<p>No ${networkName} NFTs found in your wallet</p>
                 <p><small>Note: Only scanning specific collections. Your NFT may be from a different contract.</small></p>`;
         }
