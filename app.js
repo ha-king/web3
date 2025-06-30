@@ -90,7 +90,7 @@ async function connectWallet() {
             connectWalletBtn.disabled = true;
             sendTransactionBtn.disabled = false;
             
-            if (currentNetwork === 'apechain' || currentNetwork === 'solana') {
+            if (currentNetwork === 'apechain') {
                 document.getElementById('nftContainer').classList.remove('hidden');
                 await loadNFTs();
             } else {
@@ -144,8 +144,11 @@ async function connectSolanaWallet() {
             connectWalletBtn.disabled = true;
             sendTransactionBtn.disabled = false;
             
-            document.getElementById('nftContainer').classList.remove('hidden');
-            await loadNFTs();
+            if (currentNetwork === 'solana') {
+                document.getElementById('nftContainer').classList.remove('hidden');
+                // Solana NFT loading not implemented yet
+                document.getElementById('nftContainer').innerHTML = '<p>Solana NFT support coming soon</p>';
+            }
         } else {
             alert('Please install Phantom wallet for Solana');
         }
