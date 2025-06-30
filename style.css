@@ -112,6 +112,83 @@ body {
     width: 100%;
 }
 
+.collection-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.collection-title {
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.network-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.collection-header h3 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.collection-description {
+    margin: 0 0 1.5rem 0;
+    font-size: 16px;
+    opacity: 0.9;
+    line-height: 1.5;
+}
+
+.collection-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.stat {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.stat strong {
+    color: #FFD700;
+    font-weight: 600;
+}
+
+.loading-indicator {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 0.6; }
+}
+
+@media (max-width: 768px) {
+    .collection-header {
+        padding: 1.5rem;
+    }
+    
+    .collection-header h3 {
+        font-size: 24px;
+    }
+    
+    .collection-stats {
+        gap: 1rem;
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
 .nft-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -237,7 +314,7 @@ body {
     border-radius: 16px;
     max-width: 900px;
     width: 95%;
-    max-height: 85vh;
+    max-height: 97.75vh;
     overflow-y: auto;
     position: relative;
     box-shadow: 0 16px 48px rgba(0,0,0,0.16);
@@ -325,6 +402,62 @@ body {
     word-break: break-all;
 }
 
+.collection-link {
+    color: #0052ff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.collection-link:hover {
+    text-decoration: underline;
+}
+
+.attributes-section {
+    margin-top: 1.5rem;
+}
+
+.attributes-section h4 {
+    margin: 0 0 1rem 0;
+    color: #4a5568;
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.attributes-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.attribute-row {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-radius: 6px;
+    border-left: 3px solid #667eea;
+    margin-bottom: 0.25rem;
+}
+
+.attribute-trait {
+    font-size: 12px;
+    color: #4a5568;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.attribute-value {
+    font-size: 10.2px;
+    color: #2d3748;
+    font-weight: 700;
+}
+
 .attributes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -338,20 +471,6 @@ body {
     border-radius: 6px;
     border: 1px solid #e2e8f0;
     text-align: center;
-}
-
-.attribute-trait {
-    font-size: 12px;
-    color: #718096;
-    text-transform: uppercase;
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-}
-
-.attribute-value {
-    font-size: 16px;
-    color: #2d3748;
-    font-weight: 600;
 }
 
 .auth-container {
@@ -431,5 +550,29 @@ body {
     }
     .attributes-grid {
         grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+    .attributes-2col {
+        grid-template-columns: 1fr;
+        max-height: 150px;
+    }
+    .attribute-row {
+        padding: 0.5rem;
+    }
+    .attribute-trait {
+        font-size: 11px;
+    }
+    .attribute-value {
+        font-size: 9.35px;
+    }
+    .collection-header {
+        padding: 1.5rem;
+    }
+    .collection-header h3 {
+        font-size: 24px;
+    }
+    .collection-stats {
+        gap: 1rem;
+        flex-direction: column;
+        align-items: center;
     }
 }
