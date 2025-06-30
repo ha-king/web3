@@ -274,18 +274,17 @@ async function loadNFTs() {
                             <div class="loading-text">Loading your ${tokenCount} NFTs...</div>
                         </div>`;
                     
-                    // Optimized scanning with smaller batches for faster initial results
+                    // Optimized scanning with larger batches for faster loading
                     const ranges = [
-                        [1, 500],
-                        [501, 2000], 
-                        [2001, 5000],
-                        [5001, 10000]
+                        [1, 1000],
+                        [1001, 3000], 
+                        [3001, 10000]
                     ];
                     
                     for (const [start, end] of ranges) {
                         if (allTokens.length >= tokenCount) break;
                         
-                        const batchSize = 100; // Smaller batches for faster response
+                        const batchSize = 200; // Larger batches for faster response
                         
                         for (let i = start; i <= end && allTokens.length < tokenCount; i += batchSize) {
                             const batch = [];
@@ -341,7 +340,6 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
     const isComplete = tokens.length >= totalCount;
     const networkConfig = NETWORKS[currentNetwork];
     
-    const currentFilter = document.getElementById('filterSelect')?.value || 'all';
     const totalSupply = contractInfo.totalSupply;
     
     nftContainer.innerHTML = `
@@ -355,10 +353,10 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
                 ${totalSupply ? `<span class="stat">Total Supply: <strong>${totalSupply.toLocaleString()}</strong></span>` : ''}
                 ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
-                <select id="filterSelect" class="filter-select" onchange="filterGallery()">
+                ${isComplete ? `<select id="filterSelect" class="filter-select" onchange="filterGallery()">
                     <option value="all">Show All</option>
                     ${getFilterOptions(tokens)}
-                </select>
+                </select>` : ''}
             </div>
         </div>
         <div class="nft-gallery">
@@ -374,11 +372,6 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
         </div>`;
     
     window.nftData = tokens;
-    
-    if (currentFilter !== 'all') {
-        document.getElementById('filterSelect').value = currentFilter;
-        filterGallery();
-    }
 }
 
 async function getTokenMetadata(contract, tokenId) {
