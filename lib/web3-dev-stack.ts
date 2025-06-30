@@ -41,7 +41,6 @@ export class Web3DevStack extends cdk.Stack {
     const sourceOutput = new codepipeline.Artifact();
 
     const buildProject = new codebuild.PipelineProject(this, 'Web3DevBuildProject', {
-      buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml'),
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
         environmentVariables: {
