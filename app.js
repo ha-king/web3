@@ -47,7 +47,12 @@ const NFT_CACHE = {
 };
 
 const APECHAIN_NFT_CONTRACTS = [
-    '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'  // ApeCoin Collection on ApeChain
+    {
+        address: '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266',
+        name: 'ApeCoin Collection',
+        description: 'Official ApeCoin NFT Collection on ApeChain',
+        totalSupply: 10000
+    }
 ];
 
 const NETWORKS = {
@@ -222,97 +227,123 @@ async function loadNFTs() {
     try {
         const allTokens = [];
         
-        // Scan contract directly
-            for (const contract of APECHAIN_NFT_CONTRACTS) {
-                try {
-                    const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
-                    const balance = await window.ethereum.request({
-                        method: 'eth_call',
-                        params: [{ to: contract, data: balanceData }, 'latest']
-                    });
+        // Process contracts with collection info
+        for (const contractInfo of APECHAIN_NFT_CONTRACTS) {
+            try {
+                const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
+                const balance = await window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: contractInfo.address, data: balanceData }, 'latest']
+                });
+                
+                const tokenCount = parseInt(balance, 16);
+                console.log(`${contractInfo.name} balance: ${tokenCount} tokens`);
+                
+                if (tokenCount > 0) {
+                    // Show collection info immediately
+                    nftContainer.innerHTML = `
+                        <div class="collection-header">
+                            <h3>${contractInfo.name}</h3>
+                            <p class="collection-description">${contractInfo.description}</p>
+                            <div class="collection-stats">
+                                <span class="stat">Your NFTs: <strong>${tokenCount}</strong></span>
+                                <span class="stat">Total Supply: <strong>${contractInfo.totalSupply.toLocaleString()}</strong></span>
+                            </div>
+                        </div>
+                        <div class="coin-loader">
+                            <div class="${coinClass}" ${coinStyle}></div>
+                            <div class="loading-text">Loading your ${tokenCount} NFTs...</div>
+                        </div>`;
                     
-                    const tokenCount = parseInt(balance, 16);
-                    console.log(`Contract balance: ${tokenCount} tokens`);
+                    // Optimized scanning with smaller batches for faster initial results
+                    const ranges = [
+                        [1, 500],
+                        [501, 2000], 
+                        [2001, 5000],
+                        [5001, 10000]
+                    ];
                     
-                    if (tokenCount > 0) {
-                        console.log(`Scanning for ${tokenCount} tokens...`);
+                    for (const [start, end] of ranges) {
+                        if (allTokens.length >= tokenCount) break;
                         
-                        // Scan common NFT ranges efficiently
-                        const ranges = [
-                            [1, 1000],
-                            [1001, 5000], 
-                            [5001, 10000],
-                            [10001, 20000]
-                        ];
+                        const batchSize = 100; // Smaller batches for faster response
                         
-                        for (const [start, end] of ranges) {
-                            if (allTokens.length >= tokenCount) break;
+                        for (let i = start; i <= end && allTokens.length < tokenCount; i += batchSize) {
+                            const batch = [];
+                            const batchEnd = Math.min(i + batchSize - 1, end);
                             
-                            console.log(`Checking range ${start}-${end}`);
-                            const batchSize = 500;
+                            for (let tokenId = i; tokenId <= batchEnd; tokenId++) {
+                                batch.push(checkTokenOwnership(contractInfo.address, tokenId));
+                            }
                             
-                            for (let i = start; i <= end && allTokens.length < tokenCount; i += batchSize) {
-                                const batch = [];
-                                const batchEnd = Math.min(i + batchSize - 1, end);
-                                
-                                for (let tokenId = i; tokenId <= batchEnd; tokenId++) {
-                                    batch.push(checkTokenOwnership(contract, tokenId));
+                            const results = await Promise.allSettled(batch);
+                            const ownedIds = [];
+                            
+                            for (let j = 0; j < results.length; j++) {
+                                if (results[j].status === 'fulfilled' && results[j].value) {
+                                    ownedIds.push(i + j);
                                 }
+                            }
+                            
+                            if (ownedIds.length > 0) {
+                                console.log(`Found owned tokens:`, ownedIds);
                                 
-                                const results = await Promise.allSettled(batch);
-                                const ownedIds = [];
+                                // Load metadata in parallel for faster loading
+                                const metadataPromises = ownedIds.map(tokenId => 
+                                    getTokenMetadata(contractInfo.address, tokenId)
+                                        .then(metadata => ({ contract: contractInfo.address, tokenId, ...metadata }))
+                                );
                                 
-                                for (let j = 0; j < results.length; j++) {
-                                    if (results[j].status === 'fulfilled' && results[j].value) {
-                                        ownedIds.push(i + j);
-                                    }
-                                }
+                                const newTokens = await Promise.all(metadataPromises);
+                                allTokens.push(...newTokens);
                                 
-                                if (ownedIds.length > 0) {
-                                    console.log(`Found owned tokens:`, ownedIds);
-                                    
-                                    for (const tokenId of ownedIds) {
-                                        const metadata = await getTokenMetadata(contract, tokenId);
-                                        allTokens.push({ contract, tokenId, ...metadata });
-                                    }
-                                    
-                                    nftContainer.innerHTML = `
-                                        <div class="coin-loader">
-                                            <div class="${coinClass}" ${coinStyle}></div>
-                                            <div class="loading-text">Found ${allTokens.length}/${tokenCount} NFTs...</div>
-                                        </div>`;
-                                }
+                                // Update UI with partial results for faster perceived loading
+                                updateNFTDisplay(contractInfo, allTokens, tokenCount);
                             }
                         }
                     }
-                } catch (e) {
-                    console.log('Contract check failed:', e);
                 }
+            } catch (e) {
+                console.log('Contract check failed:', e);
             }
+        }
         
-        if (allTokens.length > 0) {
-            nftContainer.innerHTML = `
-                <h3>Your ApeCoin NFTs (${allTokens.length} items)</h3>
-                <div class="nft-gallery">
-                    ${allTokens.map((token, index) => 
-                        `<div class="nft-card" onclick="showNFTModal(${index})">
-                            <img src="${getCachedImageUrl(token.image)}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
-                            <div class="nft-info">
-                                <h4>${token.name || `#${token.tokenId}`}</h4>
-                                <p>Token ID: ${token.tokenId}</p>
-                            </div>
-                        </div>`
-                    ).join('')}
-                </div>`;
-            
-            window.nftData = allTokens;
-        } else {
+        if (allTokens.length === 0) {
             nftContainer.innerHTML = '<p>No ApeCoin NFTs found in your wallet</p>';
         }
     } catch (error) {
         nftContainer.innerHTML = '<p>Error loading NFTs</p>';
         console.error('NFT loading error:', error);
     }
+}
+
+function updateNFTDisplay(contractInfo, tokens, totalCount) {
+    const nftContainer = document.getElementById('nftContainer');
+    const isComplete = tokens.length >= totalCount;
+    
+    nftContainer.innerHTML = `
+        <div class="collection-header">
+            <h3>${contractInfo.name}</h3>
+            <p class="collection-description">${contractInfo.description}</p>
+            <div class="collection-stats">
+                <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
+                <span class="stat">Total Supply: <strong>${contractInfo.totalSupply.toLocaleString()}</strong></span>
+                ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
+            </div>
+        </div>
+        <div class="nft-gallery">
+            ${tokens.map((token, index) => 
+                `<div class="nft-card" onclick="showNFTModal(${index})">
+                    <img src="${getCachedImageUrl(token.image)}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
+                    <div class="nft-info">
+                        <h4>${token.name || `#${token.tokenId}`}</h4>
+                        <p>Token ID: ${token.tokenId}</p>
+                    </div>
+                </div>`
+            ).join('')}
+        </div>`;
+    
+    window.nftData = tokens;
 }
 
 async function getTokenMetadata(contract, tokenId) {
@@ -382,13 +413,15 @@ function showNFTModal(index) {
     const nft = window.nftData[index];
     const modal = document.getElementById('nftModal');
     
+    const cachedImageUrl = getCachedImageUrl(nft.image);
+    
     const imageSection = `
-        <img id="modalImage" class="modal-image" src="${nft.image}" alt="${nft.name}">
-        ${nft.attributes && nft.attributes.length > 0 ? `<div class="metadata-section">
+        <img id="modalImage" class="modal-image" src="${cachedImageUrl}" alt="${nft.name}">
+        ${nft.attributes && nft.attributes.length > 0 ? `<div class="attributes-section">
             <h4>Attributes</h4>
-            <div class="attributes-grid">
+            <div class="attributes-2col">
                 ${nft.attributes.map(attr => `
-                    <div class="attribute-item">
+                    <div class="attribute-row">
                         <div class="attribute-trait">${attr.trait_type}</div>
                         <div class="attribute-value">${attr.value}</div>
                     </div>
@@ -418,12 +451,9 @@ function showNFTModal(index) {
         </div>` : ''}
     `;
     
-    const cachedImageUrl = getCachedImageUrl(nft.image);
-    const updatedImageSection = imageSection.replace(nft.image, cachedImageUrl);
-    
     document.querySelector('.modal-body').innerHTML = `
         <div class="modal-image-section">
-            ${updatedImageSection}
+            ${imageSection}
         </div>
         <div class="modal-info">
             <h3>${nft.name}</h3>
