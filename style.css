@@ -95,7 +95,7 @@ body {
     display: none !important;
 }
 
-.network-select {
+.network-select, .sort-select {
     padding: 10px 16px;
     border: 1px solid #e6ebf1;
     border-radius: 8px;
@@ -104,6 +104,14 @@ body {
     background: white;
     color: #1a1a1a;
     font-weight: 500;
+}
+
+.sort-select {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 12px;
+    min-width: 140px;
 }
 
 .nft-container {

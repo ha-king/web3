@@ -337,6 +337,11 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
                 <span class="stat">Total Supply: <strong>${contractInfo.totalSupply.toLocaleString()}</strong></span>
                 ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
+                <select id="sortSelect" class="sort-select" onchange="sortGallery()">
+                    <option value="tokenId">Sort by Token ID</option>
+                    <option value="name">Sort by Name</option>
+                    ${getSortOptions(tokens)}
+                </select>
             </div>
         </div>
         <div class="nft-gallery">
@@ -555,6 +560,46 @@ function showMainContent() {
     document.getElementById('authContainer').classList.add('hidden');
     document.getElementById('mainContent').classList.remove('hidden');
     document.querySelector('.top-nav').classList.remove('hidden');
+}
+
+function getSortOptions(tokens) {
+    const attributes = new Set();
+    tokens.forEach(token => {
+        if (token.attributes) {
+            token.attributes.forEach(attr => attributes.add(attr.trait_type));
+        }
+    });
+    return Array.from(attributes).map(attr => `<option value="${attr}">${attr}</option>`).join('');
+}
+
+function sortGallery() {
+    const sortBy = document.getElementById('sortSelect').value;
+    if (!window.nftData) return;
+    
+    const sorted = [...window.nftData].sort((a, b) => {
+        if (sortBy === 'tokenId') {
+            return parseInt(a.tokenId) - parseInt(b.tokenId);
+        } else if (sortBy === 'name') {
+            return (a.name || '').localeCompare(b.name || '');
+        } else {
+            const aAttr = a.attributes?.find(attr => attr.trait_type === sortBy)?.value || '';
+            const bAttr = b.attributes?.find(attr => attr.trait_type === sortBy)?.value || '';
+            return aAttr.toString().localeCompare(bAttr.toString());
+        }
+    });
+    
+    const gallery = document.querySelector('.nft-gallery');
+    if (gallery) {
+        gallery.innerHTML = sorted.map((token, index) => 
+            `<div class="nft-card" onclick="showNFTModal(${window.nftData.indexOf(token)})">
+                <img src="${getCachedImageUrl(token.image)}" alt="${token.name}" class="nft-image" onerror="this.src='${generateFallbackImage(token.tokenId)}'">
+                <div class="nft-info">
+                    <h4>${token.name || `#${token.tokenId}`}</h4>
+                    <p>Token ID: ${token.tokenId}</p>
+                </div>
+            </div>`
+        ).join('');
+    }
 }
 
 async function sendTransaction() {
