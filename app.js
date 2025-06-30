@@ -318,6 +318,16 @@ async function loadNFTs() {
                             <div class="loading-text">Loading your ${tokenCount} NFTs...</div>
                         </div>`;
                     
+                    // Check specific token ID 25 for Base NFT first
+                    if (currentNetwork === 'base' && contractInfo.address === '0x7b99dd120231cdb80252c4eac3e09d999a8254e1') {
+                        const hasToken25 = await checkERC1155Balance(contractInfo.address, 25);
+                        if (hasToken25) {
+                            const metadata = await getTokenMetadata(contractInfo.address, 25);
+                            allTokens.push({ contract: contractInfo.address, tokenId: 25, ...metadata });
+                            updateNFTDisplay(contractInfo, allTokens, tokenCount);
+                        }
+                    }
+                    
                     // Optimized scanning with larger batches for faster loading
                     const ranges = [
                         [1, 1000],
