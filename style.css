@@ -107,11 +107,32 @@ body {
 }
 
 .filter-select {
-    background: rgba(255,255,255,0.9);
-    border: 1px solid rgba(255,255,255,0.3);
-    color: white;
-    font-size: 12px;
-    min-width: 140px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    color: #424242;
+    font-size: 14px;
+    min-width: 200px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.filter-select:hover {
+    border-color: #0052ff;
+    box-shadow: 0 4px 8px rgba(0,82,255,0.15);
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #0052ff;
+    box-shadow: 0 0 0 3px rgba(0,82,255,0.1);
+}
+
+.filter-select option {
+    padding: 8px 12px;
+    color: #424242;
+    background: white;
+    font-size: 14px;
 }
 
 .nft-container {
