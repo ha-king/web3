@@ -3,6 +3,10 @@ let userAccount;
 let currentNetwork = 'ethereum';
 // Authentication disabled for dev environment
 
+const APECHAIN_NFT_CONTRACTS = [
+    '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'  // ApeCoin Collection on ApeChain
+];
+
 const NETWORKS = {
     ethereum: {
         chainId: '0x1',
@@ -157,10 +161,6 @@ async function connectSolanaWallet() {
         alert('Failed to connect Solana wallet');
     }
 }
-
-const APECHAIN_NFT_CONTRACTS = [
-    '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'  // ApeCoin Collection on ApeChain
-];
 
 async function loadNFTs() {
     const nftContainer = document.getElementById('nftContainer');
