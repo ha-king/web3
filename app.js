@@ -51,7 +51,6 @@ const APECHAIN_NFT_CONTRACTS = [
         address: '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266',
         name: 'ApeCoin Collection',
         description: 'Official ApeCoin NFT Collection on ApeChain',
-        totalSupply: 10000,
         magicEdenUrl: 'https://magiceden.us/collections/apechain/0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'
     }
 ];
@@ -251,7 +250,6 @@ async function loadNFTs() {
                             <p class="collection-description">${contractInfo.description}</p>
                             <div class="collection-stats">
                                 <span class="stat">Your NFTs: <strong>${tokenCount}</strong></span>
-                                <span class="stat">Total Supply: <strong>${contractInfo.totalSupply.toLocaleString()}</strong></span>
                             </div>
                         </div>
                         <div class="coin-loader">
@@ -335,7 +333,6 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
             <p class="collection-description">${contractInfo.description}</p>
             <div class="collection-stats">
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
-                <span class="stat">Total Supply: <strong>${contractInfo.totalSupply.toLocaleString()}</strong></span>
                 ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
                 <select id="filterSelect" class="filter-select" onchange="filterGallery()">
                     <option value="all">Show All</option>
