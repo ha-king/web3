@@ -368,11 +368,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('nftModal');
     const closeBtn = document.querySelector('.close');
     
-    closeBtn.onclick = () => modal.classList.add('hidden');
-    modal.onclick = (e) => {
-        if (e.target === modal) modal.classList.add('hidden');
-    };
+    if (closeBtn) {
+        closeBtn.onclick = () => modal.classList.add('hidden');
+    }
+    
+    if (modal) {
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        };
+    }
 });
+
+// Add global close function for modal
+function closeModal() {
+    const modal = document.getElementById('nftModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
 
 function generateFallbackImage(tokenId) {
     return `data:image/svg+xml;base64,${btoa(`<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#f0f0f0"/><text x="50%" y="45%" font-family="Arial" font-size="16" fill="#666" text-anchor="middle">#${tokenId}</text><text x="50%" y="60%" font-family="Arial" font-size="12" fill="#999" text-anchor="middle">ApeCoin NFT</text></svg>`)}`;
