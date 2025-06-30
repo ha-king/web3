@@ -12,8 +12,8 @@ export class Web3ProdStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // S3 and CloudFront for app hosting
     const bucket = new s3.Bucket(this, 'Web3ProdAppBucket', {
+      bucketName: `web3-prod-app-${this.account}-${this.region}`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true
     });
@@ -36,19 +36,18 @@ export class Web3ProdStack extends cdk.Stack {
       cacheControl: [s3deploy.CacheControl.noCache()]
     });
 
-    // CI/CD Pipeline
     const sourceOutput = new codepipeline.Artifact();
 
-    const buildProject = new codebuild.PipelineProject(this, 'Web3ProdBuildProject', {
+    const buildProject = new codebuild.PipelineProject(this, 'Web3BuildProject', {
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
         phases: {
-          install: {
-            'runtime-versions': { nodejs: '18' },
-            commands: ['npm install -g aws-cdk', 'npm install']
-          },
           build: {
-            commands: ['export AWS_DEFAULT_REGION=us-west-2', 'npm run build', 'npx cdk deploy Web3ProdStack --require-approval never']
+            commands: [
+              `aws s3 sync . s3://${bucket.bucketName} --exclude "*" --include "*.html" --include "*.css" --include "app.js"`,
+              `DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, '${bucket.bucketName}')].Id" --output text)`,
+              'aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*" || true'
+            ]
           }
         }
       }),
@@ -56,16 +55,16 @@ export class Web3ProdStack extends cdk.Stack {
     });
 
     buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
-      actions: ['ssm:GetParameter'],
-      resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/cdk-bootstrap/*`]
+      actions: ['s3:*'],
+      resources: [`arn:aws:s3:::${bucket.bucketName}`, `arn:aws:s3:::${bucket.bucketName}/*`]
     }));
     
     buildProject.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
-      actions: ['s3:*'],
-      resources: ['arn:aws:s3:::cdk-*', 'arn:aws:s3:::cdk-*/*']
+      actions: ['cloudfront:CreateInvalidation', 'cloudfront:ListDistributions'],
+      resources: ['*']
     }));
 
-    new codepipeline.Pipeline(this, 'Web3ProdPipeline', {
+    new codepipeline.Pipeline(this, 'Web3Pipeline', {
       pipelineName: 'Web3-Prod-Pipeline',
       stages: [
         {
@@ -75,7 +74,7 @@ export class Web3ProdStack extends cdk.Stack {
               actionName: 'GitHub_Source',
               owner: 'ha-king',
               repo: 'web3',
-              branch: 'main',
+              branch: 'prod',
               oauthToken: cdk.SecretValue.secretsManager('github-token'),
               output: sourceOutput
             })
