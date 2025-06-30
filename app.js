@@ -262,6 +262,23 @@ async function getTotalSupplyFromMagicEden(contractAddress) {
     }
 }
 
+async function getApeCoinPrice() {
+    try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=apecoin&vs_currencies=usd');
+        const data = await response.json();
+        return data.apecoin?.usd || 1;
+    } catch (e) {
+        console.log('Failed to fetch ApeCoin price:', e);
+        return 1;
+    }
+}
+
+function calculateCollectionValue(tokenCount, floorPrice, apeCoinPrice) {
+    const totalApe = tokenCount * (floorPrice || 0.1);
+    const totalUsd = totalApe * apeCoinPrice;
+    return { totalApe, totalUsd };
+}
+
 async function loadNFTs() {
     const nftContainer = document.getElementById('nftContainer');
     if (!nftContainer) return;
@@ -296,9 +313,13 @@ async function loadNFTs() {
                 console.log(`Network: ${currentNetwork}, User: ${userAccount}`);
                 
                 if (tokenCount > 0) {
-                    // Fetch total supply from MagicEden
+                    // Fetch total supply and price data
                     const totalSupply = await getTotalSupplyFromMagicEden(contractInfo.address);
+                    const apeCoinPrice = await getApeCoinPrice();
+                    const { totalApe, totalUsd } = calculateCollectionValue(tokenCount, 0.1, apeCoinPrice);
+                    
                     contractInfo.totalSupply = totalSupply;
+                    contractInfo.collectionValue = { totalApe, totalUsd };
                     
                     // Show collection info immediately
                     nftContainer.innerHTML = `
@@ -311,6 +332,7 @@ async function loadNFTs() {
                             <div class="collection-stats">
                                 <span class="stat">Your NFTs: <strong>${tokenCount}</strong></span>
                                 ${totalSupply ? `<span class="stat">Total Supply: <strong>${totalSupply.toLocaleString()}</strong></span>` : ''}
+                                <span class="stat">Est. Value: <strong>${totalApe.toFixed(2)} APE (~$${totalUsd.toFixed(2)})</strong></span>
                             </div>
                         </div>
                         <div class="coin-loader">
@@ -413,8 +435,9 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
             <div class="collection-stats">
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
                 ${totalSupply ? `<span class="stat">Total Supply: <strong>${totalSupply.toLocaleString()}</strong></span>` : ''}
+                ${contractInfo.collectionValue ? `<span class="stat">Est. Value: <strong>${contractInfo.collectionValue.totalApe.toFixed(2)} APE (~$${contractInfo.collectionValue.totalUsd.toFixed(2)})</strong></span>` : ''}
                 ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
-                ${isComplete ? `<button class="trade-btn" onclick="showTradeModal()">Trade</button>` : ''}
+                ${isComplete && currentNetwork === 'apechain' ? `<button class="trade-btn" onclick="showTradeModal()">Trade</button>` : ''}
                 ${isComplete ? `<select id="filterSelect" class="filter-select" onchange="filterGallery()">
                     <option value="all">Show All</option>
                     ${getFilterOptions(tokens)}
