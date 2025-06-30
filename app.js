@@ -1,43 +1,7 @@
 let web3;
 let userAccount;
 let currentNetwork = 'ethereum';
-let cognitoUser;
-
-// Cognito configuration
-const COGNITO_CONFIG = {
-    region: 'us-east-1',
-    userPoolId: 'us-east-1_XXXXXXXXX', // Will be set after pool creation
-    clientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX' // Will be set after pool creation
-};
-
-// Initialize Cognito
-let userPool = null;
-let cognitoAvailable = false;
-
-function initializeCognito() {
-    // Check if we have real Cognito configuration
-    if (COGNITO_CONFIG.userPoolId.includes('XXXXX') || COGNITO_CONFIG.clientId.includes('XXXXX')) {
-        console.log('Demo mode: Run cognito-setup.js to create user pool');
-        return false;
-    }
-
-    try {
-        const poolData = {
-            UserPoolId: COGNITO_CONFIG.userPoolId,
-            ClientId: COGNITO_CONFIG.clientId
-        };
-        userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-        cognitoAvailable = true;
-        console.log('Cognito initialized successfully');
-        return true;
-    } catch (error) {
-        console.error('Cognito initialization failed:', error);
-        return false;
-    }
-}
-
-// Initialize on load
-cognitoAvailable = initializeCognito();
+// Authentication disabled for dev environment
 
 const NETWORKS = {
     ethereum: {
@@ -83,22 +47,8 @@ networkSelect.addEventListener('change', (e) => {
 connectWalletBtn.addEventListener('click', connectWallet);
 sendTransactionBtn.addEventListener('click', sendTransaction);
 
-// Auth event listeners
-document.getElementById('signInBtn').addEventListener('click', signIn);
-document.getElementById('signUpBtn').addEventListener('click', signUp);
-document.getElementById('confirmBtn').addEventListener('click', confirmSignUp);
-document.getElementById('signOutBtn').addEventListener('click', signOut);
-document.getElementById('showSignUp').addEventListener('click', () => {
-    document.getElementById('signInForm').classList.add('hidden');
-    document.getElementById('signUpForm').classList.remove('hidden');
-});
-document.getElementById('showSignIn').addEventListener('click', () => {
-    document.getElementById('signUpForm').classList.add('hidden');
-    document.getElementById('signInForm').classList.remove('hidden');
-});
-
-// Check if user is already authenticated
-checkAuthState();
+// Skip authentication in dev mode
+showMainContent();
 
 async function connectWallet() {
     if (currentNetwork === 'solana') {
@@ -452,152 +402,10 @@ function decodeString(hex) {
     }
 }
 
-function checkAuthState() {
-    if (cognitoAvailable && userPool) {
-        try {
-            cognitoUser = userPool.getCurrentUser();
-            if (cognitoUser) {
-                cognitoUser.getSession((err, session) => {
-                    if (err) {
-                        console.log('Session error:', err);
-                        showAuthContainer();
-                    } else if (session && session.isValid()) {
-                        console.log('Valid session found');
-                        showMainContent();
-                    } else {
-                        console.log('Invalid session');
-                        showAuthContainer();
-                    }
-                });
-            } else {
-                console.log('No current user');
-                showAuthContainer();
-            }
-        } catch (error) {
-            console.log('Auth check failed:', error);
-            showAuthContainer();
-        }
-    } else {
-        console.log('Demo mode: Skipping authentication');
-        showMainContent();
-    }
-}
-
-function showAuthContainer() {
-    document.getElementById('authContainer').classList.remove('hidden');
-    document.getElementById('mainContent').classList.add('hidden');
-    document.querySelector('.top-nav').classList.add('hidden');
-}
-
 function showMainContent() {
     document.getElementById('authContainer').classList.add('hidden');
     document.getElementById('mainContent').classList.remove('hidden');
     document.querySelector('.top-nav').classList.remove('hidden');
-}
-
-function signUp() {
-    const email = document.getElementById('signUpEmail').value;
-    const password = document.getElementById('signUpPassword').value;
-    
-    if (!email || !password) {
-        alert('Please enter email and password');
-        return;
-    }
-
-    if (!cognitoAvailable) {
-        alert('Demo mode: Authentication not configured. Run cognito-setup.js first.');
-        return;
-    }
-    
-    const attributeList = [
-        new AmazonCognitoIdentity.CognitoUserAttribute({
-            Name: 'email',
-            Value: email
-        })
-    ];
-    
-    userPool.signUp(email, password, attributeList, null, (err, result) => {
-        if (err) {
-            alert('Sign up failed: ' + err.message);
-            return;
-        }
-        cognitoUser = result.user;
-        document.getElementById('signUpForm').classList.add('hidden');
-        document.getElementById('confirmForm').classList.remove('hidden');
-        alert('Verification code sent to your email!');
-    });
-}
-
-function confirmSignUp() {
-    const confirmationCode = document.getElementById('confirmCode').value;
-    
-    if (!confirmationCode) {
-        alert('Please enter the confirmation code');
-        return;
-    }
-
-    if (!cognitoUser) {
-        alert('No user to confirm. Please sign up first.');
-        return;
-    }
-    
-    cognitoUser.confirmRegistration(confirmationCode, true, (err, result) => {
-        if (err) {
-            alert('Confirmation failed: ' + err.message);
-            return;
-        }
-        alert('Account confirmed successfully! Please sign in.');
-        document.getElementById('confirmForm').classList.add('hidden');
-        document.getElementById('signInForm').classList.remove('hidden');
-    });
-}
-
-function signIn() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    
-    if (!email || !password) {
-        alert('Please enter email and password');
-        return;
-    }
-
-    if (!cognitoAvailable) {
-        alert('Demo mode: Authentication not configured. Run cognito-setup.js first.');
-        return;
-    }
-    
-    const authenticationData = {
-        Username: email,
-        Password: password
-    };
-    
-    const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
-    
-    const userData = {
-        Username: email,
-        Pool: userPool
-    };
-    
-    cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
-    
-    cognitoUser.authenticateUser(authenticationDetails, {
-        onSuccess: (result) => {
-            console.log('Authentication successful');
-            showMainContent();
-        },
-        onFailure: (err) => {
-            alert('Sign in failed: ' + err.message);
-        }
-    });
-}
-
-function signOut() {
-    if (cognitoAvailable && cognitoUser) {
-        cognitoUser.signOut();
-        console.log('User signed out');
-    }
-    cognitoUser = null;
-    showAuthContainer();
 }
 
 async function sendTransaction() {

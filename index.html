@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IND3X - Web3 Assets</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
+
 </head>
 <body>
     <nav class="top-nav">
@@ -18,36 +18,14 @@
             </select>
             <button id="connectWallet" class="btn">Connect Wallet</button>
             <button id="sendTransaction" class="btn" disabled>Send Transaction</button>
-            <button id="signOutBtn" class="btn">Sign Out</button>
+
             <div id="walletInfo" class="wallet-info hidden">
                 <p><span id="currentNetwork"></span> | <span id="walletAddress"></span> | <span id="walletBalance"></span> <span id="balanceSymbol">ETH</span></p>
             </div>
         </div>
     </nav>
     
-    <div id="authContainer" class="auth-container">
-        <div class="auth-card">
-            <h2>Sign in to IND3X</h2>
-            <div id="signInForm">
-                <input type="email" id="email" placeholder="Email" class="auth-input">
-                <input type="password" id="password" placeholder="Password" class="auth-input">
-                <button id="signInBtn" class="btn auth-btn">Sign In</button>
-                <p class="auth-link">Don't have an account? <a href="#" id="showSignUp">Sign up</a></p>
-            </div>
-            <div id="signUpForm" class="hidden">
-                <input type="email" id="signUpEmail" placeholder="Email" class="auth-input">
-                <input type="password" id="signUpPassword" placeholder="Password" class="auth-input">
-                <button id="signUpBtn" class="btn auth-btn">Sign Up</button>
-                <p class="auth-link">Already have an account? <a href="#" id="showSignIn">Sign in</a></p>
-            </div>
-            <div id="confirmForm" class="hidden">
-                <input type="text" id="confirmCode" placeholder="Confirmation Code" class="auth-input">
-                <button id="confirmBtn" class="btn auth-btn">Confirm</button>
-            </div>
-        </div>
-    </div>
-    
-    <main class="main-content hidden" id="mainContent">
+    <main class="main-content" id="mainContent">
         <h2 class="dashboard-title">Asset Dashboard</h2>
         <div id="nftContainer" class="nft-container hidden"></div>
     </main>
