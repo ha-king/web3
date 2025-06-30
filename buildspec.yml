@@ -9,5 +9,4 @@ phases:
   build:
     commands:
       - export AWS_DEFAULT_REGION=us-west-2
-      - npm run build
       - npx cdk deploy Web3ProdStack --require-approval never
