@@ -51,6 +51,7 @@ const APECHAIN_NFT_CONTRACTS = [
         address: '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266',
         name: 'ApeCoin Collection',
         description: 'Official ApeCoin NFT Collection on ApeChain',
+        creator: '0x1234567890123456789012345678901234567890',
         magicEdenUrl: 'https://magiceden.us/collections/apechain/0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'
     }
 ];
@@ -324,6 +325,8 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
     const isComplete = tokens.length >= totalCount;
     const networkConfig = NETWORKS[currentNetwork];
     
+    const currentFilter = document.getElementById('filterSelect')?.value || 'all';
+    
     nftContainer.innerHTML = `
         <div class="collection-header">
             <div class="collection-title">
@@ -333,6 +336,8 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
             <p class="collection-description">${contractInfo.description}</p>
             <div class="collection-stats">
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
+                <span class="stat">Creator: <strong>${contractInfo.creator?.substring(0, 6)}...${contractInfo.creator?.substring(38)}</strong></span>
+                <span class="stat"><a href="${contractInfo.magicEdenUrl}" target="_blank" class="collection-link">View on MagicEden</a></span>
                 ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
                 <select id="filterSelect" class="filter-select" onchange="filterGallery()">
                     <option value="all">Show All</option>
@@ -353,6 +358,11 @@ function updateNFTDisplay(contractInfo, tokens, totalCount) {
         </div>`;
     
     window.nftData = tokens;
+    
+    if (currentFilter !== 'all') {
+        document.getElementById('filterSelect').value = currentFilter;
+        filterGallery();
+    }
 }
 
 async function getTokenMetadata(contract, tokenId) {
@@ -451,6 +461,10 @@ function showNFTModal(index) {
                 <span class="metadata-label">Contract Address</span>
                 <div class="metadata-value">${nft.contract}</div>
             </div>
+            ${contractInfo?.creator ? `<div class="metadata-item">
+                <span class="metadata-label">Creator</span>
+                <div class="metadata-value">${contractInfo.creator}</div>
+            </div>` : ''}
             ${contractInfo?.magicEdenUrl ? `<div class="metadata-item">
                 <span class="metadata-label">Collection</span>
                 <div class="metadata-value"><a href="${contractInfo.magicEdenUrl}" target="_blank" class="collection-link">View on MagicEden</a></div>
