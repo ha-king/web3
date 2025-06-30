@@ -51,7 +51,8 @@ const APECHAIN_NFT_CONTRACTS = [
         address: '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266',
         name: 'ApeCoin Collection',
         description: 'Official ApeCoin NFT Collection on ApeChain',
-        totalSupply: 10000
+        totalSupply: 10000,
+        magicEdenUrl: 'https://magiceden.io/collections/apechain/apecoin-collection'
     }
 ];
 
@@ -243,7 +244,10 @@ async function loadNFTs() {
                     // Show collection info immediately
                     nftContainer.innerHTML = `
                         <div class="collection-header">
-                            <h3>${contractInfo.name}</h3>
+                            <div class="collection-title">
+                                <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                                <h3>${contractInfo.name}</h3>
+                            </div>
                             <p class="collection-description">${contractInfo.description}</p>
                             <div class="collection-stats">
                                 <span class="stat">Your NFTs: <strong>${tokenCount}</strong></span>
@@ -320,10 +324,14 @@ async function loadNFTs() {
 function updateNFTDisplay(contractInfo, tokens, totalCount) {
     const nftContainer = document.getElementById('nftContainer');
     const isComplete = tokens.length >= totalCount;
+    const networkConfig = NETWORKS[currentNetwork];
     
     nftContainer.innerHTML = `
         <div class="collection-header">
-            <h3>${contractInfo.name}</h3>
+            <div class="collection-title">
+                <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                <h3>${contractInfo.name}</h3>
+            </div>
             <p class="collection-description">${contractInfo.description}</p>
             <div class="collection-stats">
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
@@ -430,6 +438,7 @@ function showNFTModal(index) {
         </div>` : ''}
     `;
     
+    const contractInfo = APECHAIN_NFT_CONTRACTS.find(c => c.address === nft.contract);
     const metadataHtml = `
         <div class="metadata-section">
             <h4>Token Details</h4>
@@ -441,6 +450,10 @@ function showNFTModal(index) {
                 <span class="metadata-label">Contract Address</span>
                 <div class="metadata-value">${nft.contract}</div>
             </div>
+            ${contractInfo?.magicEdenUrl ? `<div class="metadata-item">
+                <span class="metadata-label">Collection</span>
+                <div class="metadata-value"><a href="${contractInfo.magicEdenUrl}" target="_blank" class="collection-link">View on MagicEden</a></div>
+            </div>` : ''}
         </div>
         
         ${nft.description ? `<div class="metadata-section">

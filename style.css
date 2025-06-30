@@ -122,8 +122,21 @@ body {
     box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
 }
 
+.collection-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.network-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
 .collection-header h3 {
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     font-size: 28px;
     font-weight: 700;
 }
@@ -388,6 +401,16 @@ body {
     font-size: 15px;
     line-height: 1.4;
     word-break: break-all;
+}
+
+.collection-link {
+    color: #0052ff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.collection-link:hover {
+    text-decoration: underline;
 }
 
 .attributes-section {
