@@ -227,8 +227,8 @@ async function loadNFTs() {
     if (!nftContainer) return;
     
     const networkConfig = NETWORKS[currentNetwork];
-    const coinClass = networkConfig.logo ? 'coin has-logo' : 'coin';
-    const coinStyle = networkConfig.logo ? `style="background-image: url('${networkConfig.logo}')"` : '';
+    const coinClass = 'coin has-logo';
+    const coinStyle = `style="background-image: url('logo.jpg'); background-size: cover;"`;
     
     nftContainer.innerHTML = `
         <div class="coin-loader">
@@ -254,6 +254,7 @@ async function loadNFTs() {
                 if (tokenCount > 0) {
                     // Fetch total supply from MagicEden
                     const totalSupply = await getTotalSupplyFromMagicEden(contractInfo.address);
+                    contractInfo.totalSupply = totalSupply;
                     
                     // Show collection info immediately
                     nftContainer.innerHTML = `
@@ -269,7 +270,7 @@ async function loadNFTs() {
                             </div>
                         </div>
                         <div class="coin-loader">
-                            <div class="${coinClass}" ${coinStyle}></div>
+                            <div class="coin has-logo" style="background-image: url('logo.jpg'); background-size: cover;"></div>
                             <div class="loading-text">Loading your ${tokenCount} NFTs...</div>
                         </div>`;
                     
@@ -316,7 +317,7 @@ async function loadNFTs() {
                                 allTokens.push(...newTokens);
                                 
                                 // Update UI with partial results for faster perceived loading
-                                await updateNFTDisplay(contractInfo, allTokens, tokenCount);
+                                updateNFTDisplay(contractInfo, allTokens, tokenCount);
                             }
                         }
                     }
@@ -335,13 +336,13 @@ async function loadNFTs() {
     }
 }
 
-async function updateNFTDisplay(contractInfo, tokens, totalCount) {
+function updateNFTDisplay(contractInfo, tokens, totalCount) {
     const nftContainer = document.getElementById('nftContainer');
     const isComplete = tokens.length >= totalCount;
     const networkConfig = NETWORKS[currentNetwork];
     
     const currentFilter = document.getElementById('filterSelect')?.value || 'all';
-    const totalSupply = await getTotalSupplyFromMagicEden(contractInfo.address);
+    const totalSupply = contractInfo.totalSupply;
     
     nftContainer.innerHTML = `
         <div class="collection-header">
@@ -353,8 +354,6 @@ async function updateNFTDisplay(contractInfo, tokens, totalCount) {
             <div class="collection-stats">
                 <span class="stat">Your NFTs: <strong>${tokens.length}${isComplete ? '' : `/${totalCount}`}</strong></span>
                 ${totalSupply ? `<span class="stat">Total Supply: <strong>${totalSupply.toLocaleString()}</strong></span>` : ''}
-                <span class="stat">Creator: <strong>${contractInfo.creator?.substring(0, 6)}...${contractInfo.creator?.substring(38)}</strong></span>
-                <span class="stat"><a href="${contractInfo.magicEdenUrl}" target="_blank" class="collection-link">View on MagicEden</a></span>
                 ${!isComplete ? '<span class="stat loading-indicator">Loading more...</span>' : ''}
                 <select id="filterSelect" class="filter-select" onchange="filterGallery()">
                     <option value="all">Show All</option>
