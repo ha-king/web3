@@ -56,6 +56,15 @@ const APECHAIN_NFT_CONTRACTS = [
     }
 ];
 
+const BASE_NFT_CONTRACTS = [
+    {
+        address: '0x1234567890123456789012345678901234567890',
+        name: 'Base NFT Collection',
+        description: 'NFT Collection on Base Network',
+        creator: '0x1234567890123456789012345678901234567890'
+    }
+];
+
 const NETWORKS = {
     ethereum: {
         chainId: '0x1',
@@ -72,6 +81,14 @@ const NETWORKS = {
         rpcUrls: ['https://apechain.calderachain.xyz/http'],
         blockExplorerUrls: ['https://apechain.calderachain.xyz/'],
         logo: 'logo.jpg'
+    },
+    base: {
+        chainId: '0x2105',
+        chainName: 'Base',
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        rpcUrls: ['https://mainnet.base.org'],
+        blockExplorerUrls: ['https://basescan.org'],
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiMwMDUyRkYiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkJBU0U8L3RleHQ+Cjwvc3ZnPg=='
     },
     solana: {
         chainName: 'Solana Mainnet',
@@ -114,7 +131,7 @@ async function connectWallet() {
             const networkConfig = NETWORKS[currentNetwork];
             
             try {
-                if (currentNetwork === 'apechain') {
+                if (currentNetwork === 'apechain' || currentNetwork === 'base') {
                     await addNetwork(networkConfig);
                 } else {
                     await switchToNetwork(networkConfig.chainId);
@@ -143,7 +160,7 @@ async function connectWallet() {
             connectWalletBtn.disabled = true;
             sendTransactionBtn.disabled = false;
             
-            if (currentNetwork === 'apechain') {
+            if (currentNetwork === 'apechain' || currentNetwork === 'base') {
                 document.getElementById('nftContainer').classList.remove('hidden');
                 await loadNFTs();
             } else {
@@ -240,7 +257,8 @@ async function loadNFTs() {
         const allTokens = [];
         
         // Process contracts with collection info
-        for (const contractInfo of APECHAIN_NFT_CONTRACTS) {
+        const contracts = currentNetwork === 'base' ? BASE_NFT_CONTRACTS : APECHAIN_NFT_CONTRACTS;
+        for (const contractInfo of contracts) {
             try {
                 const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
                 const balance = await window.ethereum.request({
