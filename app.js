@@ -262,6 +262,38 @@ async function getTotalSupplyFromMagicEden(contractAddress) {
     }
 }
 
+async function getCollectionAveragePrice(contractAddress) {
+    try {
+        // Try to get collection listings
+        const response = await fetch(`https://api-mainnet.magiceden.dev/v2/collections/apechain/${contractAddress}/listings?offset=0&limit=100`);
+        if (response.ok) {
+            const listings = await response.json();
+            if (listings.length > 0) {
+                const prices = listings.map(listing => parseFloat(listing.price) / Math.pow(10, 18));
+                const average = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+                console.log(`Collection average price: ${average} APE from ${prices.length} listings`);
+                return average;
+            }
+        }
+        
+        // Fallback: try collection stats for floor price
+        const statsResponse = await fetch(`https://api-mainnet.magiceden.dev/v2/collections/apechain/${contractAddress}/stats`);
+        if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            const floorPrice = stats.floorPrice ? parseFloat(stats.floorPrice) / Math.pow(10, 18) : null;
+            if (floorPrice) {
+                console.log(`Using floor price: ${floorPrice} APE`);
+                return floorPrice;
+            }
+        }
+        
+        return 55; // Final fallback
+    } catch (e) {
+        console.log('Failed to fetch collection average price:', e);
+        return 55;
+    }
+}
+
 async function getApeCoinPrice() {
     try {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=apecoin&vs_currencies=usd');
@@ -276,7 +308,7 @@ async function getApeCoinPrice() {
     }
 }
 
-async function getNFTPurchasePrice(contractAddress, tokenId) {
+async function getNFTPurchasePrice(contractAddress, tokenId, fallbackPrice = 55) {
     try {
         // Try multiple MagicEden API endpoints
         let activities = [];
@@ -338,12 +370,12 @@ async function getNFTPurchasePrice(contractAddress, tokenId) {
             return price;
         }
         
-        console.log(`No price data found for token ${tokenId}, using 55 APE fallback`);
-        return 55; // ApeCoin NFT fallback estimate
+        console.log(`No price data found for token ${tokenId}, using collection average: ${fallbackPrice} APE`);
+        return fallbackPrice;
     } catch (e) {
         console.log(`Failed to fetch purchase price from MagicEden for token ${tokenId}:`, e);
-        console.log(`Using fallback price: 55 APE for token ${tokenId}`);
-        return 55;
+        console.log(`Using fallback price: ${fallbackPrice} APE for token ${tokenId}`);
+        return fallbackPrice;
     }
 }
 
@@ -396,9 +428,11 @@ async function loadNFTs() {
                 console.log(`Network: ${currentNetwork}, User: ${userAccount}`);
                 
                 if (tokenCount > 0) {
-                    // Fetch total supply
+                    // Fetch total supply and average price
                     const totalSupply = await getTotalSupplyFromMagicEden(contractInfo.address);
+                    const averagePrice = await getCollectionAveragePrice(contractInfo.address);
                     contractInfo.totalSupply = totalSupply;
+                    contractInfo.averagePrice = averagePrice;
                     
                     // Show collection info immediately
                     nftContainer.innerHTML = `
@@ -474,7 +508,7 @@ async function loadNFTs() {
                                 const newTokens = await Promise.all(metadataPromises);
                                 
                                 // Get purchase prices for new tokens
-                                const pricePromises = ownedIds.map(tokenId => getNFTPurchasePrice(contractInfo.address, tokenId));
+                                const pricePromises = ownedIds.map(tokenId => getNFTPurchasePrice(contractInfo.address, tokenId, contractInfo.averagePrice));
                                 const purchasePrices = await Promise.all(pricePromises);
                                 
                                 // Add purchase prices to tokens
@@ -488,7 +522,7 @@ async function loadNFTs() {
                                 const apeCoinPrice = await getApeCoinPrice();
                                 console.log(`ApeCoin price from API: $${apeCoinPrice}`);
                                 
-                                const allPrices = allTokens.map(token => token.purchasePrice || 55);
+                                const allPrices = allTokens.map(token => token.purchasePrice || contractInfo.averagePrice || 55);
                                 console.log(`Individual NFT prices:`, allPrices);
                                 console.log(`Number of NFTs: ${allPrices.length}`);
                                 
