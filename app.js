@@ -338,14 +338,12 @@ async function getNFTPurchasePrice(contractAddress, tokenId) {
             return price;
         }
         
-        console.log(`No price data found for token ${tokenId}`);
-        console.log(`MagicEden API may not support ApeChain or endpoint structure changed`);
-        // Use more realistic estimate based on typical NFT floor prices
-        return tokenId === 697 ? 2.5 : 0.5; // Higher estimate for specific tokens
+        console.log(`No price data found for token ${tokenId}, using 55 APE fallback`);
+        return 55; // ApeCoin NFT fallback estimate
     } catch (e) {
         console.log(`Failed to fetch purchase price from MagicEden for token ${tokenId}:`, e);
-        console.log(`Using fallback price: 0.1 APE for token ${tokenId}`);
-        return 0.1;
+        console.log(`Using fallback price: 55 APE for token ${tokenId}`);
+        return 55;
     }
 }
 
@@ -490,7 +488,7 @@ async function loadNFTs() {
                                 const apeCoinPrice = await getApeCoinPrice();
                                 console.log(`ApeCoin price from API: $${apeCoinPrice}`);
                                 
-                                const allPrices = allTokens.map(token => token.purchasePrice || 0.1);
+                                const allPrices = allTokens.map(token => token.purchasePrice || 55);
                                 console.log(`Individual NFT prices:`, allPrices);
                                 console.log(`Number of NFTs: ${allPrices.length}`);
                                 
