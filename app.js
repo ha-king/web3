@@ -279,24 +279,42 @@ async function getNFTPurchasePrice(contractAddress, tokenId) {
         const response = await fetch(`https://api-mainnet.magiceden.dev/v2/tokens/apechain/${contractAddress}/${tokenId}/activities?offset=0&limit=20`);
         const activities = await response.json();
         
+        console.log(`MagicEden API response for token ${tokenId}:`, activities);
+        
         // Find purchase transaction by current user
         const purchase = activities.find(activity => 
-            activity.type === 'sale' && 
-            activity.buyer?.toLowerCase() === userAccount.toLowerCase()
+            (activity.type === 'sale' || activity.type === 'buy') && 
+            (activity.buyer?.toLowerCase() === userAccount.toLowerCase() || 
+             activity.to?.toLowerCase() === userAccount.toLowerCase())
         );
         
-        if (purchase && purchase.price) {
-            // Convert price from wei to APE (assuming price is in wei)
-            const price = parseFloat(purchase.price) / Math.pow(10, 18);
-            console.log(`Found purchase price for token ${tokenId}: ${price} APE`);
-            return price;
+        if (purchase) {
+            // Try different price fields from MagicEden response
+            const priceValue = purchase.price || purchase.pricePerItem || purchase.totalPrice || purchase.amount;
+            if (priceValue) {
+                // Price might be in different formats - try parsing as number first
+                let price = parseFloat(priceValue);
+                // If price is very large, assume it's in wei and convert
+                if (price > 1000) {
+                    price = price / Math.pow(10, 18);
+                }
+                console.log(`Found purchase price for token ${tokenId}: ${price} APE (raw: ${priceValue})`);
+                return price;
+            }
         }
         
         // Fallback: get recent sale price
-        const recentSale = activities.find(activity => activity.type === 'sale' && activity.price);
+        const recentSale = activities.find(activity => 
+            (activity.type === 'sale' || activity.type === 'buy') && 
+            (activity.price || activity.pricePerItem || activity.totalPrice || activity.amount)
+        );
         if (recentSale) {
-            const price = parseFloat(recentSale.price) / Math.pow(10, 18);
-            console.log(`Using recent sale price for token ${tokenId}: ${price} APE`);
+            const priceValue = recentSale.price || recentSale.pricePerItem || recentSale.totalPrice || recentSale.amount;
+            let price = parseFloat(priceValue);
+            if (price > 1000) {
+                price = price / Math.pow(10, 18);
+            }
+            console.log(`Using recent sale price for token ${tokenId}: ${price} APE (raw: ${priceValue})`);
             return price;
         }
         
