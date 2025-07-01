@@ -275,22 +275,31 @@ async function getApeCoinPrice() {
 
 async function getNFTPurchasePrice(contractAddress, tokenId) {
     try {
-        // Get transfer events for this token to find purchase price
-        const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-        const logs = await window.ethereum.request({
-            method: 'eth_getLogs',
-            params: [{
-                fromBlock: '0x0',
-                toBlock: 'latest',
-                address: contractAddress,
-                topics: [transferTopic, null, userAccount.padStart(66, '0')]
-            }]
-        });
+        // Get transaction history from MagicEden API
+        const response = await fetch(`https://api-mainnet.magiceden.dev/v2/tokens/apechain/${contractAddress}/${tokenId}/activities?offset=0&limit=20`);
+        const activities = await response.json();
         
-        // Return estimated price based on recent market activity
-        return logs.length > 0 ? 0.15 : 0.1; // APE
-    } catch (e) {
+        // Find purchase transaction by current user
+        const purchase = activities.find(activity => 
+            activity.type === 'sale' && 
+            activity.buyer?.toLowerCase() === userAccount.toLowerCase()
+        );
+        
+        if (purchase && purchase.price) {
+            // Convert price from wei to APE (assuming price is in wei)
+            return parseFloat(purchase.price) / Math.pow(10, 18);
+        }
+        
+        // Fallback: get recent sale price
+        const recentSale = activities.find(activity => activity.type === 'sale' && activity.price);
+        if (recentSale) {
+            return parseFloat(recentSale.price) / Math.pow(10, 18);
+        }
+        
         return 0.1; // Default fallback
+    } catch (e) {
+        console.log('Failed to fetch purchase price from MagicEden:', e);
+        return 0.1;
     }
 }
 
