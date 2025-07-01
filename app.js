@@ -129,7 +129,7 @@ const currentNetworkSpan = document.getElementById('currentNetwork');
 const walletAddress = document.getElementById('walletAddress');
 const walletBalance = document.getElementById('walletBalance');
 const balanceSymbol = document.getElementById('balanceSymbol');
-const sendTransactionBtn = document.getElementById('sendTransaction');
+
 
 networkSelect.addEventListener('change', (e) => {
     currentNetwork = e.target.value;
@@ -138,7 +138,7 @@ networkSelect.addEventListener('change', (e) => {
     }
 });
 connectWalletBtn.addEventListener('click', connectWallet);
-sendTransactionBtn.addEventListener('click', sendTransaction);
+
 
 // Skip authentication in dev mode
 showMainContent();
@@ -181,7 +181,6 @@ async function connectWallet() {
             walletInfo.classList.remove('hidden');
             connectWalletBtn.textContent = 'Connected';
             connectWalletBtn.disabled = true;
-            sendTransactionBtn.disabled = false;
             
             if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
                 document.getElementById('nftContainer').classList.remove('hidden');
@@ -235,7 +234,6 @@ async function connectSolanaWallet() {
             walletInfo.classList.remove('hidden');
             connectWalletBtn.textContent = 'Connected';
             connectWalletBtn.disabled = true;
-            sendTransactionBtn.disabled = false;
             
             if (currentNetwork === 'solana') {
                 document.getElementById('nftContainer').classList.remove('hidden');

@@ -18,6 +18,21 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .top-nav {
+        flex-direction: column;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .top-nav h1 {
+        font-size: 20px;
+        margin-bottom: 0.5rem;
+    }
 }
 
 .top-nav h1 {
@@ -36,6 +51,19 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     border: 1px solid #e6ebf1;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    
+    .dashboard-title {
+        font-size: 24px;
+        margin-bottom: 1.5rem;
+    }
 }
 
 .dashboard-title {
@@ -76,6 +104,21 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .wallet-section {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .network-select, .btn {
+        width: 100%;
+        max-width: 300px;
+    }
 }
 
 .wallet-info {
@@ -272,6 +315,41 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1.5rem;
     padding: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    .nft-gallery {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        padding: 0.5rem 0;
+    }
+    
+    .nft-image {
+        height: 150px;
+    }
+    
+    .nft-info {
+        padding: 0.75rem;
+    }
+    
+    .nft-info h4 {
+        font-size: 14px;
+    }
+    
+    .nft-info p {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nft-gallery {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+    }
+    
+    .nft-image {
+        height: 120px;
+    }
 }
 
 .nft-card {
