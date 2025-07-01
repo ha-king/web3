@@ -319,9 +319,11 @@ async function getNFTPurchasePrice(contractAddress, tokenId) {
         }
         
         console.log(`No price data found for token ${tokenId}, using default 0.1 APE`);
+        console.log(`Available activities for token ${tokenId}:`, activities.map(a => ({type: a.type, price: a.price, buyer: a.buyer, to: a.to})));
         return 0.1; // Default fallback
     } catch (e) {
-        console.log('Failed to fetch purchase price from MagicEden:', e);
+        console.log(`Failed to fetch purchase price from MagicEden for token ${tokenId}:`, e);
+        console.log(`Using fallback price: 0.1 APE for token ${tokenId}`);
         return 0.1;
     }
 }
@@ -456,9 +458,16 @@ async function loadNFTs() {
                                 
                                 // Update collection value
                                 const apeCoinPrice = await getApeCoinPrice();
+                                console.log(`ApeCoin price from API: $${apeCoinPrice}`);
+                                
                                 const allPrices = allTokens.map(token => token.purchasePrice || 0.1);
+                                console.log(`Individual NFT prices:`, allPrices);
+                                console.log(`Number of NFTs: ${allPrices.length}`);
+                                
                                 const { totalApe, totalUsd } = calculateCollectionValue(allPrices, apeCoinPrice);
-                                console.log(`Collection value: ${totalApe} APE ($${totalUsd}) from prices:`, allPrices);
+                                console.log(`Total APE: ${totalApe}, Total USD: ${totalUsd}`);
+                                console.log(`Calculation: ${allPrices.join(' + ')} = ${totalApe} APE * $${apeCoinPrice} = $${totalUsd}`);
+                                
                                 contractInfo.collectionValue = { totalApe, totalUsd };
                                 
                                 // Update UI with partial results for faster perceived loading
