@@ -149,28 +149,30 @@ async function connectWallet() {
         return;
     }
     
-    if (typeof window.ethereum !== 'undefined') {
+    // Check for mobile wallets first
+    if (window.ethereum || window.coinbaseWalletExtension) {
+        const provider = window.coinbaseWalletExtension || window.ethereum;
         try {
             const networkConfig = NETWORKS[currentNetwork];
             
             try {
                 if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
-                    await addNetwork(networkConfig);
+                    await addNetwork(networkConfig, provider);
                 } else {
-                    await switchToNetwork(networkConfig.chainId);
+                    await switchToNetwork(networkConfig.chainId, provider);
                 }
             } catch (networkError) {
                 console.log('Network switch failed, continuing anyway:', networkError.message);
             }
             
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const accounts = await provider.request({ method: 'eth_requestAccounts' });
             userAccount = accounts[0];
             
             walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(38);
             currentNetworkSpan.textContent = networkConfig.chainName;
             balanceSymbol.textContent = networkConfig.nativeCurrency.symbol;
             
-            const balance = await window.ethereum.request({
+            const balance = await provider.request({
                 method: 'eth_getBalance',
                 params: [userAccount, 'latest']
             });
@@ -194,13 +196,20 @@ async function connectWallet() {
             alert('Failed to connect wallet');
         }
     } else {
-        alert('Please install MetaMask or another Web3 wallet');
+        // Mobile-specific wallet detection
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            // Try to open Coinbase Wallet on mobile
+            const coinbaseWalletUrl = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`;
+            window.open(coinbaseWalletUrl, '_blank');
+        } else {
+            alert('Please install MetaMask or Coinbase Wallet');
+        }
     }
 }
 
-async function addNetwork(config) {
+async function addNetwork(config, provider = window.ethereum) {
     try {
-        await window.ethereum.request({
+        await provider.request({
             method: 'wallet_addEthereumChain',
             params: [config]
         });
@@ -209,9 +218,9 @@ async function addNetwork(config) {
     }
 }
 
-async function switchToNetwork(chainId) {
+async function switchToNetwork(chainId, provider = window.ethereum) {
     try {
-        await window.ethereum.request({
+        await provider.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId }]
         });
