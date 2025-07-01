@@ -287,15 +287,20 @@ async function getNFTPurchasePrice(contractAddress, tokenId) {
         
         if (purchase && purchase.price) {
             // Convert price from wei to APE (assuming price is in wei)
-            return parseFloat(purchase.price) / Math.pow(10, 18);
+            const price = parseFloat(purchase.price) / Math.pow(10, 18);
+            console.log(`Found purchase price for token ${tokenId}: ${price} APE`);
+            return price;
         }
         
         // Fallback: get recent sale price
         const recentSale = activities.find(activity => activity.type === 'sale' && activity.price);
         if (recentSale) {
-            return parseFloat(recentSale.price) / Math.pow(10, 18);
+            const price = parseFloat(recentSale.price) / Math.pow(10, 18);
+            console.log(`Using recent sale price for token ${tokenId}: ${price} APE`);
+            return price;
         }
         
+        console.log(`No price data found for token ${tokenId}, using default 0.1 APE`);
         return 0.1; // Default fallback
     } catch (e) {
         console.log('Failed to fetch purchase price from MagicEden:', e);
@@ -435,6 +440,7 @@ async function loadNFTs() {
                                 const apeCoinPrice = await getApeCoinPrice();
                                 const allPrices = allTokens.map(token => token.purchasePrice || 0.1);
                                 const { totalApe, totalUsd } = calculateCollectionValue(allPrices, apeCoinPrice);
+                                console.log(`Collection value: ${totalApe} APE ($${totalUsd}) from prices:`, allPrices);
                                 contractInfo.collectionValue = { totalApe, totalUsd };
                                 
                                 // Update UI with partial results for faster perceived loading
