@@ -135,6 +135,9 @@ networkSelect.addEventListener('change', (e) => {
     currentNetwork = e.target.value;
     if (userAccount) {
         connectWallet();
+    } else if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent) && currentNetwork === 'apechain') {
+        // Auto-connect when ApeChain is selected in Coinbase Wallet mobile view
+        setTimeout(() => connectWallet(), 500);
     }
 });
 connectWalletBtn.addEventListener('click', connectWallet);
@@ -145,6 +148,15 @@ showMainContent();
 
 // Check for previously connected wallet on page load
 checkPreviousConnection();
+
+// Auto-connect if opened in Coinbase Wallet mobile view
+if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent)) {
+    setTimeout(() => {
+        if (!userAccount && currentNetwork === 'apechain') {
+            connectWallet();
+        }
+    }, 1000);
+}
 
 async function checkPreviousConnection() {
     const wasConnected = localStorage.getItem('walletConnected');
