@@ -163,6 +163,17 @@ async function checkPreviousConnection() {
                 
                 if (accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
                     userAccount = accounts[0];
+                    
+                    // Switch to saved network if needed
+                    if (savedNetwork === 'apechain' || savedNetwork === 'base' || savedNetwork === 'optimism') {
+                        const networkConfig = NETWORKS[savedNetwork];
+                        try {
+                            await addNetwork(networkConfig, provider);
+                        } catch (e) {
+                            console.log('Network switch on reconnect failed:', e);
+                        }
+                    }
+                    
                     await updateWalletDisplay();
                     
                     if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
