@@ -143,6 +143,62 @@ connectWalletBtn.addEventListener('click', connectWallet);
 // Skip authentication in dev mode
 showMainContent();
 
+// Check for previously connected wallet on page load
+checkPreviousConnection();
+
+async function checkPreviousConnection() {
+    const wasConnected = localStorage.getItem('walletConnected');
+    const savedAddress = localStorage.getItem('walletAddress');
+    const savedNetwork = localStorage.getItem('connectedNetwork');
+    
+    if (wasConnected && savedAddress && savedNetwork) {
+        currentNetwork = savedNetwork;
+        networkSelect.value = savedNetwork;
+        
+        // Try to reconnect silently
+        if (window.ethereum || window.coinbaseWalletExtension) {
+            try {
+                const provider = window.coinbaseWalletExtension || window.ethereum;
+                const accounts = await provider.request({ method: 'eth_accounts' });
+                
+                if (accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
+                    userAccount = accounts[0];
+                    await updateWalletDisplay();
+                    
+                    if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+                        document.getElementById('nftContainer').classList.remove('hidden');
+                        await loadNFTs();
+                    }
+                }
+            } catch (e) {
+                console.log('Auto-reconnect failed:', e);
+                localStorage.removeItem('walletConnected');
+            }
+        }
+    }
+}
+
+async function updateWalletDisplay() {
+    const networkConfig = NETWORKS[currentNetwork];
+    
+    walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(38);
+    currentNetworkSpan.textContent = networkConfig.chainName;
+    balanceSymbol.textContent = networkConfig.nativeCurrency.symbol;
+    
+    const provider = window.coinbaseWalletExtension || window.ethereum;
+    const balance = await provider.request({
+        method: 'eth_getBalance',
+        params: [userAccount, 'latest']
+    });
+    
+    const tokenBalance = parseInt(balance, 16) / Math.pow(10, 18);
+    walletBalance.textContent = tokenBalance.toFixed(4);
+    
+    walletInfo.classList.remove('hidden');
+    connectWalletBtn.textContent = 'Connected';
+    connectWalletBtn.disabled = true;
+}
+
 async function connectWallet() {
     if (currentNetwork === 'solana') {
         await connectSolanaWallet();
@@ -183,6 +239,11 @@ async function connectWallet() {
             walletInfo.classList.remove('hidden');
             connectWalletBtn.textContent = 'Connected';
             connectWalletBtn.disabled = true;
+            
+            // Save connection state
+            localStorage.setItem('walletConnected', 'true');
+            localStorage.setItem('walletAddress', userAccount);
+            localStorage.setItem('connectedNetwork', currentNetwork);
             
             if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
                 document.getElementById('nftContainer').classList.remove('hidden');
