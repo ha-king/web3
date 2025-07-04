@@ -46,15 +46,38 @@ const NFT_CACHE = {
     }
 };
 
-const APECHAIN_NFT_CONTRACTS = [
-    {
-        address: '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266',
-        name: 'ApeCoin Collection',
-        description: 'Official ApeCoin NFT Collection on ApeChain',
-        creator: '0x1234567890123456789012345678901234567890',
-        magicEdenUrl: 'https://magiceden.us/collections/apechain/0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'
-    }
-];
+const NETWORK_CONTRACTS = {
+    ethereum: [
+        {
+            address: '0xba0964f4e23c4e9ac8a8d50eef4f5b025e637eab',
+            name: 'Ethereum NFT Collection',
+            description: 'NFT Collection on Ethereum'
+        }
+    ],
+    apechain: [
+        {
+            address: '0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266',
+            name: 'ApeCoin Collection',
+            description: 'Official ApeCoin NFT Collection on ApeChain',
+            creator: '0x1234567890123456789012345678901234567890',
+            magicEdenUrl: 'https://magiceden.us/collections/apechain/0xa0d77da1e690156b95e0619de4a4f8fc5e3a2266'
+        }
+    ],
+    base: [
+        {
+            address: '0x7b99dd120231cdb80252c4eac3e09d999a8254e1',
+            name: 'Base NFT Collection',
+            description: 'NFT Collection on Base'
+        }
+    ],
+    optimism: [
+        {
+            address: '0xad3a0eeecefd100d2ff9dc55cbff11b8a2f489c2',
+            name: 'Optimism NFT Collection',
+            description: 'NFT Collection on Optimism'
+        }
+    ]
+};
 
 const BASE_NFT_CONTRACTS = [
     {
@@ -515,21 +538,19 @@ async function loadNFTs() {
         </div>`;
     
     try {
-        // Comprehensive NFT discovery for all networks
+        // Load NFTs based on network
         if (currentNetwork === 'ethereum') {
-            await loadAllETHNFTs();
+            await loadDirectContractNFTs();
             return;
         } else if (currentNetwork === 'base' || currentNetwork === 'optimism') {
-            await loadOpenSeaNFTs();
+            await loadDirectContractNFTs();
             return;
         }
         
         const allTokens = [];
         
         // Process contracts with collection info
-        const contracts = currentNetwork === 'base' ? BASE_NFT_CONTRACTS : 
-                         currentNetwork === 'optimism' ? OPTIMISM_NFT_CONTRACTS : 
-                         APECHAIN_NFT_CONTRACTS;
+        const contracts = NETWORK_CONTRACTS[currentNetwork] || [];
         for (const contractInfo of contracts) {
             try {
                 const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
@@ -795,7 +816,7 @@ function showNFTModal(index) {
         </div>` : ''}
     `;
     
-    const contractInfo = APECHAIN_NFT_CONTRACTS.find(c => c.address === nft.contract);
+    const contractInfo = NETWORK_CONTRACTS[currentNetwork]?.find(c => c.address === nft.contract);
     const metadataHtml = `
         <div class="metadata-section">
             <h4>Token Details</h4>
@@ -1195,6 +1216,92 @@ function displayAllNFTs(nfts, networkConfig) {
         </div>`;
     
     window.allNFTData = nfts;
+}
+
+async function loadDirectContractNFTs() {
+    const nftContainer = document.getElementById('nftContainer');
+    if (!nftContainer) return;
+    
+    const networkConfig = NETWORKS[currentNetwork];
+    const coinClass = 'coin has-logo';
+    const coinStyle = `style="background-image: url('logo.jpg'); background-size: cover;"`;
+    
+    nftContainer.innerHTML = `
+        <div class="coin-loader">
+            <div class="${coinClass}" ${coinStyle}></div>
+            <div class="loading-text">Loading ${networkConfig.chainName} NFTs...</div>
+        </div>`;
+    
+    try {
+        const allTokens = [];
+        const contracts = NETWORK_CONTRACTS[currentNetwork] || [];
+        
+        for (const contractInfo of contracts) {
+            try {
+                const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
+                const balance = await window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{ to: contractInfo.address, data: balanceData }, 'latest']
+                });
+                
+                const tokenCount = parseInt(balance, 16);
+                console.log(`${contractInfo.name} balance: ${tokenCount} tokens`);
+                
+                if (tokenCount > 0) {
+                    nftContainer.innerHTML = `
+                        <div class="collection-header">
+                            <div class="collection-title">
+                                <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                                <h3>${contractInfo.name}</h3>
+                            </div>
+                            <p class="collection-description">${contractInfo.description}</p>
+                            <div class="collection-stats">
+                                <span class="stat">Your NFTs: <strong>${tokenCount}</strong></span>
+                            </div>
+                        </div>
+                        <div class="coin-loader">
+                            <div class="coin has-logo" style="background-image: url('logo.jpg'); background-size: cover;"></div>
+                            <div class="loading-text">Loading your ${tokenCount} NFTs...</div>
+                        </div>`;
+                    
+                    // Scan for owned tokens
+                    for (let tokenId = 1; tokenId <= 10000 && allTokens.length < tokenCount; tokenId++) {
+                        try {
+                            const ownerData = '0x6352211e' + tokenId.toString(16).padStart(64, '0');
+                            const owner = await window.ethereum.request({
+                                method: 'eth_call',
+                                params: [{ to: contractInfo.address, data: ownerData }, 'latest']
+                            });
+                            
+                            const ownerAddress = '0x' + owner.slice(-40);
+                            if (ownerAddress.toLowerCase() === userAccount.toLowerCase()) {
+                                const metadata = await getTokenMetadata(contractInfo.address, tokenId);
+                                allTokens.push({ contract: contractInfo.address, tokenId, ...metadata });
+                                
+                                // Update display with current progress
+                                if (allTokens.length % 5 === 0) {
+                                    updateNFTDisplay(contractInfo, allTokens, tokenCount);
+                                }
+                            }
+                        } catch (e) {
+                            // Token doesn't exist or other error
+                        }
+                    }
+                    
+                    updateNFTDisplay(contractInfo, allTokens, tokenCount);
+                }
+            } catch (e) {
+                console.log('Contract check failed:', e);
+            }
+        }
+        
+        if (allTokens.length === 0) {
+            nftContainer.innerHTML = `<p>No NFTs found on ${networkConfig.chainName}</p>`;
+        }
+    } catch (error) {
+        nftContainer.innerHTML = '<p>Error loading NFTs</p>';
+        console.error('NFT loading error:', error);
+    }
 }
 
 function showAllNFTModal(index) {
