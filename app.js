@@ -1697,37 +1697,53 @@ async function loadBaseNFTs() {
 async function scanTransferEvents() {
     const provider = window.coinbaseWalletExtension || window.ethereum;
     const latestBlock = await provider.request({ method: 'eth_blockNumber' });
-    const fromBlock = '0x' + Math.max(0, parseInt(latestBlock, 16) - 100000).toString(16);
+    const fromBlock = '0x' + Math.max(0, parseInt(latestBlock, 16) - 200000).toString(16);
     
-    // Scan for both ERC721 and ERC1155 transfers
+    // Scan for ERC721 transfers (including mints from 0x0)
     const erc721Logs = await provider.request({
         method: 'eth_getLogs',
         params: [{
             fromBlock,
             toBlock: 'latest',
             topics: [
-                '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // ERC721 Transfer
-                null,
-                '0x' + userAccount.slice(2).padStart(64, '0')
+                '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // Transfer
+                null, // from (any address including 0x0 for mints)
+                '0x' + userAccount.slice(2).padStart(64, '0') // to user
             ]
         }]
     });
     
-    const erc1155Logs = await provider.request({
+    // Scan for ERC1155 TransferSingle
+    const erc1155SingleLogs = await provider.request({
         method: 'eth_getLogs',
         params: [{
             fromBlock,
             toBlock: 'latest',
             topics: [
-                '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62', // ERC1155 TransferSingle
-                null,
-                null,
-                '0x' + userAccount.slice(2).padStart(64, '0')
+                '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62', // TransferSingle
+                null, // operator
+                null, // from
+                '0x' + userAccount.slice(2).padStart(64, '0') // to user
             ]
         }]
     });
     
-    const allLogs = [...erc721Logs, ...erc1155Logs];
+    // Scan for ERC1155 TransferBatch
+    const erc1155BatchLogs = await provider.request({
+        method: 'eth_getLogs',
+        params: [{
+            fromBlock,
+            toBlock: 'latest',
+            topics: [
+                '0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb', // TransferBatch
+                null, // operator
+                null, // from
+                '0x' + userAccount.slice(2).padStart(64, '0') // to user
+            ]
+        }]
+    });
+    
+    const allLogs = [...erc721Logs, ...erc1155SingleLogs, ...erc1155BatchLogs];
     return allLogs.map(log => log.address).filter((addr, i, arr) => arr.indexOf(addr) === i);
 }
 
