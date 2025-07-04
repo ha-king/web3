@@ -87,6 +87,14 @@ const OPENSEA_BASE_URL = 'https://api.opensea.io/api/v2';
 // MagicEden API configuration
 const MAGICEDEN_BASE_URL = 'https://api-mainnet.magiceden.dev/v2';
 
+// Alchemy API configuration
+const ALCHEMY_API_KEY = 'your-alchemy-api-key';
+const ALCHEMY_BASE_URL = 'https://eth-mainnet.g.alchemy.com/nft/v3';
+
+// Moralis API configuration
+const MORALIS_API_KEY = 'your-moralis-api-key';
+const MORALIS_BASE_URL = 'https://deep-index.moralis.io/api/v2.2';
+
 const NETWORKS = {
     ethereum: {
         chainId: '0x1',
@@ -507,9 +515,9 @@ async function loadNFTs() {
         </div>`;
     
     try {
-        // Load NFTs from MagicEden for Ethereum, OpenSea for others
+        // Comprehensive NFT discovery for all networks
         if (currentNetwork === 'ethereum') {
-            await loadMagicEdenETHNFTs();
+            await loadAllETHNFTs();
             return;
         } else if (currentNetwork === 'base' || currentNetwork === 'optimism') {
             await loadOpenSeaNFTs();
@@ -1048,40 +1056,201 @@ function showOpenSeaNFTModal(index) {
     modal.classList.remove('hidden');
 }
 
-async function loadMagicEdenETHNFTs() {
+async function loadAllETHNFTs() {
     const nftContainer = document.getElementById('nftContainer');
     const networkConfig = NETWORKS[currentNetwork];
     
+    nftContainer.innerHTML = `
+        <div class="coin-loader">
+            <div class="coin has-logo" style="background-image: url('logo.jpg'); background-size: cover;"></div>
+            <div class="loading-text">Discovering all your NFTs...</div>
+        </div>`;
+    
     try {
-        const response = await fetch(`${MAGICEDEN_BASE_URL}/wallets/${userAccount}/tokens?offset=0&limit=100`);
+        const allNFTs = [];
         
-        if (!response.ok) throw new Error('MagicEden API error');
+        // Method 1: Alchemy API (most comprehensive)
+        try {
+            const alchemyNFTs = await fetchAlchemyNFTs();
+            allNFTs.push(...alchemyNFTs);
+        } catch (e) { console.log('Alchemy failed:', e); }
         
-        const data = await response.json();
-        const nfts = data || [];
+        // Method 2: OpenSea API
+        try {
+            const openSeaNFTs = await fetchOpenSeaETHNFTs();
+            allNFTs.push(...openSeaNFTs);
+        } catch (e) { console.log('OpenSea failed:', e); }
         
-        if (nfts.length === 0) {
-            nftContainer.innerHTML = `<p>No ETH NFTs found on MagicEden</p>`;
+        // Method 3: Moralis API
+        try {
+            const moralisNFTs = await fetchMoralisNFTs();
+            allNFTs.push(...moralisNFTs);
+        } catch (e) { console.log('Moralis failed:', e); }
+        
+        // Remove duplicates based on contract + tokenId
+        const uniqueNFTs = removeDuplicateNFTs(allNFTs);
+        
+        if (uniqueNFTs.length === 0) {
+            nftContainer.innerHTML = `<p>No NFTs found in your wallet</p>`;
             return;
         }
         
-        const processedNFTs = nfts.map(nft => ({
-            tokenId: nft.tokenId,
-            name: nft.name || `#${nft.tokenId}`,
-            image: nft.image,
-            description: nft.description,
-            contract: nft.contract,
-            collection: nft.collectionName,
-            magiceden_url: `https://magiceden.io/item-details/ethereum/${nft.contract}/${nft.tokenId}`,
-            attributes: nft.attributes || []
-        }));
-        
-        displayMagicEdenNFTs(processedNFTs, networkConfig);
+        displayAllNFTs(uniqueNFTs, networkConfig);
         
     } catch (error) {
-        console.error('MagicEden API error:', error);
-        nftContainer.innerHTML = '<p>Error loading ETH NFTs from MagicEden</p>';
+        console.error('NFT discovery error:', error);
+        nftContainer.innerHTML = '<p>Error discovering NFTs</p>';
     }
+}
+
+async function fetchAlchemyNFTs() {
+    const response = await fetch(`${ALCHEMY_BASE_URL}/${ALCHEMY_API_KEY}/getNFTsForOwner?owner=${userAccount}&withMetadata=true&pageSize=100`);
+    const data = await response.json();
+    
+    return (data.ownedNfts || []).map(nft => ({
+        tokenId: nft.tokenId,
+        name: nft.name || nft.title || `#${nft.tokenId}`,
+        image: nft.image?.originalUrl || nft.image?.cachedUrl || nft.media?.[0]?.gateway,
+        description: nft.description,
+        contract: nft.contract.address,
+        collection: nft.contract.name,
+        attributes: nft.rawMetadata?.attributes || [],
+        source: 'Alchemy'
+    }));
+}
+
+async function fetchOpenSeaETHNFTs() {
+    const response = await fetch(`${OPENSEA_BASE_URL}/chain/ethereum/account/${userAccount}/nfts`, {
+        headers: { 'X-API-KEY': OPENSEA_API_KEY }
+    });
+    const data = await response.json();
+    
+    return (data.nfts || []).map(nft => ({
+        tokenId: nft.identifier,
+        name: nft.name || `#${nft.identifier}`,
+        image: nft.image_url || nft.display_image_url,
+        description: nft.description,
+        contract: nft.contract,
+        collection: nft.collection,
+        attributes: nft.traits || [],
+        opensea_url: nft.opensea_url,
+        source: 'OpenSea'
+    }));
+}
+
+async function fetchMoralisNFTs() {
+    const response = await fetch(`${MORALIS_BASE_URL}/${userAccount}/nft?chain=eth&format=decimal&media_items=true`, {
+        headers: { 'X-API-Key': MORALIS_API_KEY }
+    });
+    const data = await response.json();
+    
+    return (data.result || []).map(nft => ({
+        tokenId: nft.token_id,
+        name: nft.name || `#${nft.token_id}`,
+        image: nft.media?.media_collection?.high?.url || nft.media?.original_media_url,
+        description: nft.metadata?.description,
+        contract: nft.token_address,
+        collection: nft.name,
+        attributes: nft.metadata?.attributes || [],
+        source: 'Moralis'
+    }));
+}
+
+function removeDuplicateNFTs(nfts) {
+    const seen = new Set();
+    return nfts.filter(nft => {
+        const key = `${nft.contract}-${nft.tokenId}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+function displayAllNFTs(nfts, networkConfig) {
+    const nftContainer = document.getElementById('nftContainer');
+    
+    nftContainer.innerHTML = `
+        <div class="collection-header">
+            <div class="collection-title">
+                <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                <h3>Complete NFT Collection</h3>
+            </div>
+            <p class="collection-description">All your NFTs discovered from multiple sources</p>
+            <div class="collection-stats">
+                <span class="stat">Total NFTs: <strong>${nfts.length}</strong></span>
+                <span class="stat">Sources: <strong>Alchemy, OpenSea, Moralis</strong></span>
+            </div>
+        </div>
+        <div class="nft-gallery">
+            ${nfts.map((nft, index) => 
+                `<div class="nft-card" onclick="showAllNFTModal(${index})">
+                    <img src="${nft.image}" alt="${nft.name}" class="nft-image" onerror="this.src='${generateFallbackImage(nft.tokenId)}'">
+                    <div class="nft-info">
+                        <h4>${nft.name}</h4>
+                        <p>Token ID: ${nft.tokenId}</p>
+                        <small>via ${nft.source}</small>
+                    </div>
+                </div>`
+            ).join('')}
+        </div>`;
+    
+    window.allNFTData = nfts;
+}
+
+function showAllNFTModal(index) {
+    const nft = window.allNFTData[index];
+    const modal = document.getElementById('nftModal');
+    
+    document.querySelector('.modal-body').innerHTML = `
+        <div class="modal-image-section">
+            <img class="modal-image" src="${nft.image}" alt="${nft.name}">
+        </div>
+        <div class="modal-info">
+            <h3>${nft.name}</h3>
+            <div class="metadata-section">
+                <h4>Token Details</h4>
+                <div class="metadata-item">
+                    <span class="metadata-label">Token ID</span>
+                    <div class="metadata-value">${nft.tokenId}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Contract</span>
+                    <div class="metadata-value">${nft.contract}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Collection</span>
+                    <div class="metadata-value">${nft.collection}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Data Source</span>
+                    <div class="metadata-value">${nft.source}</div>
+                </div>
+                ${nft.opensea_url ? `<div class="metadata-item">
+                    <span class="metadata-label">OpenSea</span>
+                    <div class="metadata-value"><a href="${nft.opensea_url}" target="_blank" class="collection-link">View on OpenSea</a></div>
+                </div>` : ''}
+            </div>
+            ${nft.description ? `<div class="metadata-section">
+                <h4>Description</h4>
+                <div class="metadata-item">
+                    <div class="metadata-value">${nft.description}</div>
+                </div>
+            </div>` : ''}
+            ${nft.attributes && nft.attributes.length > 0 ? `<div class="attributes-section">
+                <h4>Attributes</h4>
+                <div class="attributes-2col">
+                    ${nft.attributes.map(attr => `
+                        <div class="attribute-row">
+                            <div class="attribute-trait">${attr.trait_type}</div>
+                            <div class="attribute-value">${attr.value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>` : ''}
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
 }
 
 function displayMagicEdenNFTs(nfts, networkConfig) {
