@@ -203,8 +203,8 @@ connectWalletBtn.addEventListener('click', () => {
 
 function detectMultipleWallets() {
     const wallets = [];
-    if (window.ethereum) wallets.push('MetaMask/Ethereum');
-    if (window.coinbaseWalletExtension) wallets.push('Coinbase Wallet');
+    if (window.ethereum && !window.ethereum.isCoinbaseWallet) wallets.push('MetaMask');
+    if (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension) wallets.push('Coinbase');
     if (window.solana?.isPhantom) wallets.push('Phantom');
     return wallets.length > 1;
 }
@@ -215,8 +215,8 @@ function showWalletSelector() {
     
     select.innerHTML = '<option value="">Select Wallet</option>';
     
-    if (window.ethereum) select.innerHTML += '<option value="ethereum">MetaMask/Ethereum</option>';
-    if (window.coinbaseWalletExtension) select.innerHTML += '<option value="coinbase">Coinbase Wallet</option>';
+    if (window.ethereum && !window.ethereum.isCoinbaseWallet) select.innerHTML += '<option value="metamask">MetaMask</option>';
+    if (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension) select.innerHTML += '<option value="coinbase">Coinbase Wallet</option>';
     if (window.solana?.isPhantom) select.innerHTML += '<option value="phantom">Phantom</option>';
     
     selector.classList.remove('hidden');
@@ -234,11 +234,12 @@ function showWalletSelector() {
 async function connectSpecificWallet(walletType) {
     try {
         switch (walletType) {
-            case 'ethereum':
+            case 'metamask':
                 await connectEthereumWallet(window.ethereum);
                 break;
             case 'coinbase':
-                await connectEthereumWallet(window.coinbaseWalletExtension);
+                const coinbaseProvider = window.coinbaseWalletExtension || window.ethereum;
+                await connectEthereumWallet(coinbaseProvider);
                 break;
             case 'phantom':
                 await connectPhantomWallet();
@@ -1521,28 +1522,45 @@ async function loadDirectContractNFTs() {
                             <div class="loading-text">Loading your ${tokenCount} NFTs...</div>
                         </div>`;
                     
-                    // Scan for owned tokens
-                    for (let tokenId = 1; tokenId <= 10000 && allTokens.length < tokenCount; tokenId++) {
+                    // Optimized batch scanning for ApeChain
+                    const batchSize = currentNetwork === 'apechain' ? 50 : 100;
+                    const maxRange = currentNetwork === 'apechain' ? 5000 : 10000;
+                    
+                    for (let tokenId = 1; tokenId <= maxRange && allTokens.length < tokenCount; tokenId += batchSize) {
+                        const batch = [];
+                        const endId = Math.min(tokenId + batchSize - 1, maxRange);
+                        
+                        for (let id = tokenId; id <= endId; id++) {
+                            batch.push(checkTokenOwnership(contractInfo.address, id));
+                        }
+                        
                         try {
-                            const ownerData = '0x6352211e' + tokenId.toString(16).padStart(64, '0');
-                            const owner = await window.ethereum.request({
-                                method: 'eth_call',
-                                params: [{ to: contractInfo.address, data: ownerData }, 'latest']
-                            });
+                            const results = await Promise.allSettled(batch);
+                            const ownedIds = [];
                             
-                            const ownerAddress = '0x' + owner.slice(-40);
-                            if (ownerAddress.toLowerCase() === userAccount.toLowerCase()) {
-                                const metadata = await getTokenMetadata(contractInfo.address, tokenId);
-                                allTokens.push({ contract: contractInfo.address, tokenId, ...metadata });
-                                
-                                // Update display with current progress
-                                if (allTokens.length % 5 === 0) {
-                                    updateNFTDisplay(contractInfo, allTokens, tokenCount);
+                            for (let i = 0; i < results.length; i++) {
+                                if (results[i].status === 'fulfilled' && results[i].value) {
+                                    ownedIds.push(tokenId + i);
                                 }
                             }
+                            
+                            if (ownedIds.length > 0) {
+                                const metadataPromises = ownedIds.map(id => 
+                                    getTokenMetadata(contractInfo.address, id)
+                                        .then(metadata => ({ contract: contractInfo.address, tokenId: id, ...metadata }))
+                                );
+                                
+                                const newTokens = await Promise.all(metadataPromises);
+                                allTokens.push(...newTokens);
+                                
+                                updateNFTDisplay(contractInfo, allTokens, tokenCount);
+                            }
                         } catch (e) {
-                            // Token doesn't exist or other error
+                            console.log('Batch scan error:', e);
                         }
+                        
+                        // Break if we found all tokens
+                        if (allTokens.length >= tokenCount) break;
                     }
                     
                     updateNFTDisplay(contractInfo, allTokens, tokenCount);
