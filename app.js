@@ -264,41 +264,11 @@ async function connectEthereumWallet(provider) {
 }
 
 async function connectPhantomWallet() {
-    const response = await window.solana.connect();
-    userAccount = response.publicKey.toString();
-    
-    walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
-    currentNetworkSpan.textContent = 'Solana Mainnet';
-    balanceSymbol.textContent = 'SOL';
-    walletBalance.textContent = '0.0000';
-    
-    walletInfo.classList.remove('hidden');
-    connectWalletBtn.textContent = 'Connected';
-    connectWalletBtn.disabled = true;
-    
-    localStorage.setItem('walletConnected', 'true');
-    localStorage.setItem('walletAddress', userAccount);
-    localStorage.setItem('connectedNetwork', 'solana');
-    localStorage.setItem('walletType', 'solana');
+    await connectSolanaWallet();
 }
 
 async function connectCoinbaseSolanaWallet() {
-    const response = await window.coinbaseSolana.connect();
-    userAccount = response.publicKey.toString();
-    
-    walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
-    currentNetworkSpan.textContent = 'Solana Mainnet';
-    balanceSymbol.textContent = 'SOL';
-    walletBalance.textContent = '0.0000';
-    
-    walletInfo.classList.remove('hidden');
-    connectWalletBtn.textContent = 'Connected';
-    connectWalletBtn.disabled = true;
-    
-    localStorage.setItem('walletConnected', 'true');
-    localStorage.setItem('walletAddress', userAccount);
-    localStorage.setItem('connectedNetwork', 'solana');
-    localStorage.setItem('walletType', 'solana');
+    await connectSolanaWallet();
 }
 
 
@@ -492,34 +462,28 @@ async function switchToNetwork(chainId, provider = window.ethereum) {
 
 async function connectSolanaWallet() {
     try {
-        // Try Phantom wallet first
-        if (typeof window.solana !== 'undefined' && window.solana.isPhantom) {
-            const response = await window.solana.connect();
-            userAccount = response.publicKey.toString();
-        }
-        // Try Coinbase Wallet for Solana
-        else if (window.coinbaseSolana) {
-            const response = await window.coinbaseSolana.connect();
-            userAccount = response.publicKey.toString();
-        }
-        // Try generic Solana provider
-        else if (window.solana) {
-            const response = await window.solana.connect();
-            userAccount = response.publicKey.toString();
-        }
-        else {
-            // Mobile detection for wallet apps
+        let provider = null;
+        
+        // Check for any Solana provider
+        if (window.solana) {
+            provider = window.solana;
+        } else if (window.phantom?.solana) {
+            provider = window.phantom.solana;
+        } else {
+            // No Solana wallet found
             if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                const coinbaseUrl = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`;
-                window.open(coinbaseUrl, '_blank');
-                return;
+                window.open('https://phantom.app/download', '_blank');
             } else {
-                alert('Please install Phantom wallet or Coinbase Wallet for Solana');
-                return;
+                alert('Please install Phantom wallet for Solana');
             }
+            return;
         }
         
-        // Update UI after successful connection
+        // Connect to Solana wallet
+        const response = await provider.connect({ onlyIfTrusted: false });
+        userAccount = response.publicKey.toString();
+        
+        // Update UI
         walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
         currentNetworkSpan.textContent = 'Solana Mainnet';
         balanceSymbol.textContent = 'SOL';
@@ -531,17 +495,19 @@ async function connectSolanaWallet() {
         
         localStorage.setItem('walletConnected', 'true');
         localStorage.setItem('walletAddress', userAccount);
-        localStorage.setItem('connectedNetwork', currentNetwork);
+        localStorage.setItem('connectedNetwork', 'solana');
         localStorage.setItem('walletType', 'solana');
         
-        if (currentNetwork === 'solana') {
-            document.getElementById('nftContainer').classList.remove('hidden');
-            document.getElementById('nftContainer').innerHTML = '<p>Solana NFT support available</p>';
-        }
+        document.getElementById('nftContainer').classList.remove('hidden');
+        document.getElementById('nftContainer').innerHTML = '<p>Solana wallet connected successfully</p>';
         
     } catch (error) {
-        console.error('Solana wallet connection failed:', error);
-        alert('Failed to connect Solana wallet');
+        console.error('Solana connection error:', error);
+        if (error.code === 4001) {
+            alert('Connection rejected by user');
+        } else {
+            alert('Please install Phantom wallet and try again');
+        }
     }
 }
 
