@@ -169,12 +169,27 @@ const walletBalance = document.getElementById('walletBalance');
 const balanceSymbol = document.getElementById('balanceSymbol');
 
 
-networkSelect.addEventListener('change', (e) => {
+networkSelect.addEventListener('change', async (e) => {
     currentNetwork = e.target.value;
     if (userAccount) {
-        connectWallet();
+        // Clear current gallery
+        document.getElementById('nftContainer').innerHTML = '';
+        document.getElementById('nftContainer').classList.add('hidden');
+        
+        // Update network display
+        const networkConfig = NETWORKS[currentNetwork];
+        currentNetworkSpan.textContent = networkConfig.chainName;
+        balanceSymbol.textContent = networkConfig.nativeCurrency.symbol;
+        
+        // Update localStorage
+        localStorage.setItem('connectedNetwork', currentNetwork);
+        
+        // Reload NFTs for new network
+        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'solana') {
+            document.getElementById('nftContainer').classList.remove('hidden');
+            await loadNFTs();
+        }
     } else if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent) && currentNetwork === 'apechain') {
-        // Auto-connect when ApeChain is selected in Coinbase Wallet mobile view
         setTimeout(() => connectWallet(), 500);
     }
 });
