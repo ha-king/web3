@@ -96,8 +96,9 @@ body {
 }
 
 .btn:disabled {
-    background: #ccc;
+    background: #28a745;
     cursor: not-allowed;
+    color: white;
 }
 
 .wallet-section {
@@ -139,18 +140,18 @@ body {
 }
 
 .logout-btn {
-    background: #dc3545;
-    color: white;
-    border: none;
+    background: white;
+    color: #0052ff;
+    border: 3px solid #0052ff;
     padding: 6px 12px;
     border-radius: 6px;
     font-size: 12px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
 }
 
 .logout-btn:hover {
-    background: #c82333;
+    background: #f8f9fa;
 }
 
 .hidden {
