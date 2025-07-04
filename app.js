@@ -76,6 +76,13 @@ const NETWORK_CONTRACTS = {
             name: 'Optimism NFT Collection',
             description: 'NFT Collection on Optimism'
         }
+    ],
+    usdc: [
+        {
+            address: '0xa0b86a33e6776e87c6c4b0b4b1b4b1b4b1b4b1b4',
+            name: 'USDC NFT Collection',
+            description: 'NFT Collection on USDC Network'
+        }
     ]
 };
 
@@ -151,6 +158,14 @@ const NETWORKS = {
         blockExplorerUrls: ['https://optimistic.etherscan.io'],
         logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiNGRjAwNDIiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI5IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T1A8L3RleHQ+Cjwvc3ZnPg=='
     },
+    usdc: {
+        chainId: '0x1',
+        chainName: 'USDC Network',
+        nativeCurrency: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
+        rpcUrls: ['https://mainnet.infura.io/v3/'],
+        blockExplorerUrls: ['https://etherscan.io'],
+        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiMyNzc1Q0EiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VVNEQzwvdGV4dD4KPC9zdmc+'
+    },
 
 };
 
@@ -175,7 +190,7 @@ networkSelect.addEventListener('change', async (e) => {
             const provider = window.coinbaseWalletExtension || window.ethereum;
             const networkConfig = NETWORKS[currentNetwork];
             
-            if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+            if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
                 await addNetwork(networkConfig, provider);
             } else {
                 await switchToNetwork(networkConfig.chainId, provider);
@@ -193,7 +208,7 @@ networkSelect.addEventListener('change', async (e) => {
         localStorage.setItem('connectedNetwork', currentNetwork);
         
         // Reload NFTs for new network
-        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
             document.getElementById('nftContainer').classList.remove('hidden');
             await loadNFTs();
         }
@@ -345,7 +360,7 @@ async function checkPreviousConnection() {
         }
         
         // Load NFTs if supported network
-        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
             document.getElementById('nftContainer').classList.remove('hidden');
             await loadNFTs();
         }
@@ -417,7 +432,7 @@ async function connectWallet() {
             
             localStorage.setItem('walletType', 'ethereum');
             
-            if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+            if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
                 document.getElementById('nftContainer').classList.remove('hidden');
                 await loadNFTs();
             } else {
@@ -629,7 +644,7 @@ async function loadNFTs() {
         } else if (currentNetwork === 'base') {
             await loadBaseNFTs();
             return;
-        } else if (currentNetwork === 'apechain' || currentNetwork === 'optimism') {
+        } else if (currentNetwork === 'apechain' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
             await loadDirectContractNFTs();
             return;
         }
@@ -871,7 +886,8 @@ async function getTokenMetadata(contract, tokenId) {
     
     const networkName = currentNetwork === 'apechain' ? 'ApeCoin' : 
                        currentNetwork === 'ethereum' ? 'Ethereum' : 
-                       currentNetwork === 'base' ? 'Base' : 'Optimism';
+                       currentNetwork === 'base' ? 'Base' : 
+                       currentNetwork === 'usdc' ? 'USDC' : 'Optimism';
     
     const fallback = {
         name: `${networkName} NFT #${tokenId}`,
