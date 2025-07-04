@@ -1181,20 +1181,45 @@ async function loadBaseNFTsFromTransaction() {
         
         const nfts = [];
         
+        // Debug: Log transaction details
+        console.log('=== TRANSACTION DEBUG ===');
+        console.log('Transaction hash:', txHash);
+        console.log('User account:', userAccount);
+        console.log('Receipt logs count:', receipt.logs.length);
+        console.log('Block number:', receipt.blockNumber);
+        console.log('========================');
+        
         // Parse logs for NFT transfers/mints
         for (const log of receipt.logs) {
-            // Check if this log is a transfer to our user
-            if (log.topics.length >= 3) {
-                const toAddress = '0x' + log.topics[2].slice(-40);
-                if (toAddress.toLowerCase() === userAccount.toLowerCase()) {
-                    const tokenId = parseInt(log.topics[3] || log.data.slice(0, 66), 16);
-                    const metadata = await getTokenMetadata(log.address, tokenId);
-                    nfts.push({
-                        contract: log.address,
-                        tokenId,
-                        ...metadata
-                    });
+            console.log('Log:', log);
+            console.log('Topics:', log.topics);
+            
+            // Check multiple topic positions for user address
+            const topics = log.topics;
+            let isUserTransfer = false;
+            let tokenId = null;
+            
+            // Check if user is in any topic position (ERC721/ERC1155 variations)
+            for (let i = 1; i < topics.length; i++) {
+                if (topics[i] && topics[i].length >= 42) {
+                    const address = '0x' + topics[i].slice(-40);
+                    if (address.toLowerCase() === userAccount.toLowerCase()) {
+                        isUserTransfer = true;
+                        // Try to extract token ID from remaining topics or data
+                        tokenId = topics[i + 1] ? parseInt(topics[i + 1], 16) : parseInt(log.data.slice(0, 66), 16);
+                        break;
+                    }
                 }
+            }
+            
+            if (isUserTransfer && tokenId) {
+                console.log('Found NFT transfer:', log.address, tokenId);
+                const metadata = await getTokenMetadata(log.address, tokenId);
+                nfts.push({
+                    contract: log.address,
+                    tokenId,
+                    ...metadata
+                });
             }
         }
         
