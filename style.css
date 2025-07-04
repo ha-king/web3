@@ -154,21 +154,6 @@ body {
     background: #f8f9fa;
 }
 
-.wallet-selector {
-    margin-top: 0.5rem;
-}
-
-.wallet-select {
-    padding: 8px 12px;
-    border: 1px solid #e6ebf1;
-    border-radius: 6px;
-    font-size: 14px;
-    background: white;
-    color: #1a1a1a;
-    min-width: 200px;
-    cursor: pointer;
-}
-
 .hidden {
     display: none !important;
 }
