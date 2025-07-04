@@ -126,12 +126,31 @@ body {
     padding: 0.75rem 1rem;
     border-radius: 8px;
     font-size: 14px;
-    color: #1a1a1a;
+    color: white;
     border: 1px solid rgba(0,82,255,0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .wallet-info p {
     margin: 0;
+    color: white;
+}
+
+.logout-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.logout-btn:hover {
+    background: #c82333;
 }
 
 .hidden {

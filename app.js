@@ -80,6 +80,10 @@ const OPTIMISM_NFT_CONTRACTS = [
     }
 ];
 
+// OpenSea API configuration
+const OPENSEA_API_KEY = 'your-opensea-api-key'; // Get from https://docs.opensea.io/reference/api-keys
+const OPENSEA_BASE_URL = 'https://api.opensea.io/api/v2';
+
 const NETWORKS = {
     ethereum: {
         chainId: '0x1',
@@ -500,6 +504,12 @@ async function loadNFTs() {
         </div>`;
     
     try {
+        // Load NFTs from OpenSea for supported networks
+        if (currentNetwork === 'ethereum' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+            await loadOpenSeaNFTs();
+            return;
+        }
+        
         const allTokens = [];
         
         // Process contracts with collection info
@@ -904,6 +914,134 @@ function decodeString(hex) {
     }
 }
 
+async function loadOpenSeaNFTs() {
+    const nftContainer = document.getElementById('nftContainer');
+    const networkConfig = NETWORKS[currentNetwork];
+    
+    try {
+        const chainMap = {
+            'ethereum': 'ethereum',
+            'base': 'base',
+            'optimism': 'optimism'
+        };
+        
+        const response = await fetch(`${OPENSEA_BASE_URL}/chain/${chainMap[currentNetwork]}/account/${userAccount}/nfts`, {
+            headers: {
+                'X-API-KEY': OPENSEA_API_KEY
+            }
+        });
+        
+        if (!response.ok) throw new Error('OpenSea API error');
+        
+        const data = await response.json();
+        const nfts = data.nfts || [];
+        
+        if (nfts.length === 0) {
+            nftContainer.innerHTML = `<p>No NFTs found on ${networkConfig.chainName}</p>`;
+            return;
+        }
+        
+        // Process OpenSea NFTs
+        const processedNFTs = nfts.map(nft => ({
+            tokenId: nft.identifier,
+            name: nft.name || `#${nft.identifier}`,
+            image: nft.image_url || nft.display_image_url,
+            description: nft.description,
+            contract: nft.contract,
+            collection: nft.collection,
+            opensea_url: nft.opensea_url,
+            traits: nft.traits || []
+        }));
+        
+        displayOpenSeaNFTs(processedNFTs, networkConfig);
+        
+    } catch (error) {
+        console.error('OpenSea API error:', error);
+        nftContainer.innerHTML = '<p>Error loading NFTs from OpenSea</p>';
+    }
+}
+
+function displayOpenSeaNFTs(nfts, networkConfig) {
+    const nftContainer = document.getElementById('nftContainer');
+    
+    nftContainer.innerHTML = `
+        <div class="collection-header">
+            <div class="collection-title">
+                <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                <h3>OpenSea Collection</h3>
+            </div>
+            <p class="collection-description">Your NFTs from OpenSea on ${networkConfig.chainName}</p>
+            <div class="collection-stats">
+                <span class="stat">Total NFTs: <strong>${nfts.length}</strong></span>
+            </div>
+        </div>
+        <div class="nft-gallery">
+            ${nfts.map((nft, index) => 
+                `<div class="nft-card" onclick="showOpenSeaNFTModal(${index})">
+                    <img src="${nft.image}" alt="${nft.name}" class="nft-image" onerror="this.src='${generateFallbackImage(nft.tokenId)}'">
+                    <div class="nft-info">
+                        <h4>${nft.name}</h4>
+                        <p>Token ID: ${nft.tokenId}</p>
+                    </div>
+                </div>`
+            ).join('')}
+        </div>`;
+    
+    window.openSeaNFTData = nfts;
+}
+
+function showOpenSeaNFTModal(index) {
+    const nft = window.openSeaNFTData[index];
+    const modal = document.getElementById('nftModal');
+    
+    document.querySelector('.modal-body').innerHTML = `
+        <div class="modal-image-section">
+            <img class="modal-image" src="${nft.image}" alt="${nft.name}">
+        </div>
+        <div class="modal-info">
+            <h3>${nft.name}</h3>
+            <div class="metadata-section">
+                <h4>Token Details</h4>
+                <div class="metadata-item">
+                    <span class="metadata-label">Token ID</span>
+                    <div class="metadata-value">${nft.tokenId}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Contract</span>
+                    <div class="metadata-value">${nft.contract}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Collection</span>
+                    <div class="metadata-value">${nft.collection}</div>
+                </div>
+                ${nft.opensea_url ? `<div class="metadata-item">
+                    <span class="metadata-label">OpenSea</span>
+                    <div class="metadata-value"><a href="${nft.opensea_url}" target="_blank" class="collection-link">View on OpenSea</a></div>
+                </div>` : ''}
+            </div>
+            ${nft.description ? `<div class="metadata-section">
+                <h4>Description</h4>
+                <div class="metadata-item">
+                    <div class="metadata-value">${nft.description}</div>
+                </div>
+            </div>` : ''}
+            ${nft.traits && nft.traits.length > 0 ? `<div class="attributes-section">
+                <h4>Traits</h4>
+                <div class="attributes-2col">
+                    ${nft.traits.map(trait => `
+                        <div class="attribute-row">
+                            <div class="attribute-trait">${trait.trait_type}</div>
+                            <div class="attribute-value">${trait.value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>` : ''}
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+}
+
 function showMainContent() {
     document.getElementById('authContainer').classList.add('hidden');
     document.getElementById('mainContent').classList.remove('hidden');
@@ -1048,6 +1186,19 @@ async function executeTransfer() {
         console.error('Transfer failed:', error);
         alert('Transfer failed: ' + error.message);
     }
+}
+
+function logoutWallet() {
+    userAccount = null;
+    localStorage.removeItem('walletConnected');
+    localStorage.removeItem('walletAddress');
+    localStorage.removeItem('connectedNetwork');
+    
+    walletInfo.classList.add('hidden');
+    connectWalletBtn.textContent = 'Connect Wallet';
+    connectWalletBtn.disabled = false;
+    document.getElementById('nftContainer').classList.add('hidden');
+    document.getElementById('nftContainer').innerHTML = '';
 }
 
 async function sendTransaction() {
