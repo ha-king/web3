@@ -151,7 +151,7 @@ connectWalletBtn.addEventListener('click', connectWallet);
 showMainContent();
 
 // Check for previously connected wallet on page load
-checkPreviousConnection();
+window.addEventListener('load', checkPreviousConnection);
 
 // Auto-connect if opened in Coinbase Wallet mobile view
 if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent)) {
@@ -170,37 +170,37 @@ async function checkPreviousConnection() {
     if (wasConnected && savedAddress && savedNetwork) {
         currentNetwork = savedNetwork;
         networkSelect.value = savedNetwork;
+        userAccount = savedAddress;
         
-        // Try to reconnect silently
+        // Update UI immediately
+        const networkConfig = NETWORKS[currentNetwork];
+        walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(38);
+        currentNetworkSpan.textContent = networkConfig.chainName;
+        balanceSymbol.textContent = networkConfig.nativeCurrency.symbol;
+        
+        walletInfo.classList.remove('hidden');
+        connectWalletBtn.textContent = 'Connected';
+        connectWalletBtn.disabled = true;
+        
+        // Try to get fresh balance
         if (window.ethereum || window.coinbaseWalletExtension) {
             try {
                 const provider = window.coinbaseWalletExtension || window.ethereum;
-                const accounts = await provider.request({ method: 'eth_accounts' });
-                
-                if (accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
-                    userAccount = accounts[0];
-                    
-                    // Switch to saved network if needed
-                    if (savedNetwork === 'apechain' || savedNetwork === 'base' || savedNetwork === 'optimism') {
-                        const networkConfig = NETWORKS[savedNetwork];
-                        try {
-                            await addNetwork(networkConfig, provider);
-                        } catch (e) {
-                            console.log('Network switch on reconnect failed:', e);
-                        }
-                    }
-                    
-                    await updateWalletDisplay();
-                    
-                    if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
-                        document.getElementById('nftContainer').classList.remove('hidden');
-                        await loadNFTs();
-                    }
-                }
+                const balance = await provider.request({
+                    method: 'eth_getBalance',
+                    params: [userAccount, 'latest']
+                });
+                const tokenBalance = parseInt(balance, 16) / Math.pow(10, 18);
+                walletBalance.textContent = tokenBalance.toFixed(4);
             } catch (e) {
-                console.log('Auto-reconnect failed:', e);
-                localStorage.removeItem('walletConnected');
+                walletBalance.textContent = '0.0000';
             }
+        }
+        
+        // Load NFTs if supported network
+        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+            document.getElementById('nftContainer').classList.remove('hidden');
+            await loadNFTs();
         }
     }
 }
