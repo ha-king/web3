@@ -206,7 +206,6 @@ function detectMultipleWallets() {
     if (window.ethereum) wallets.push('MetaMask/Ethereum');
     if (window.coinbaseWalletExtension) wallets.push('Coinbase Wallet');
     if (window.solana?.isPhantom) wallets.push('Phantom');
-    if (window.coinbaseSolana) wallets.push('Coinbase Solana');
     return wallets.length > 1;
 }
 
@@ -219,7 +218,6 @@ function showWalletSelector() {
     if (window.ethereum) select.innerHTML += '<option value="ethereum">MetaMask/Ethereum</option>';
     if (window.coinbaseWalletExtension) select.innerHTML += '<option value="coinbase">Coinbase Wallet</option>';
     if (window.solana?.isPhantom) select.innerHTML += '<option value="phantom">Phantom</option>';
-    if (window.coinbaseSolana) select.innerHTML += '<option value="coinbase-solana">Coinbase Solana</option>';
     
     selector.classList.remove('hidden');
     connectWalletBtn.textContent = 'Cancel';
@@ -244,9 +242,6 @@ async function connectSpecificWallet(walletType) {
                 break;
             case 'phantom':
                 await connectPhantomWallet();
-                break;
-            case 'coinbase-solana':
-                await connectCoinbaseSolanaWallet();
                 break;
         }
     } catch (error) {
@@ -282,9 +277,7 @@ async function connectPhantomWallet() {
     await connectSolanaWallet();
 }
 
-async function connectCoinbaseSolanaWallet() {
-    await connectSolanaWallet();
-}
+
 
 
 // Skip authentication in dev mode
@@ -430,7 +423,7 @@ async function connectWallet() {
                 localStorage.setItem('walletType', 'ethereum');
             }
             
-            if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+            if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
                 document.getElementById('nftContainer').classList.remove('hidden');
                 await loadNFTs();
             } else {
@@ -928,10 +921,14 @@ async function getTokenMetadata(contract, tokenId) {
         console.log('Metadata fetch failed:', e);
     }
     
+    const networkName = currentNetwork === 'apechain' ? 'ApeCoin' : 
+                       currentNetwork === 'ethereum' ? 'Ethereum' : 
+                       currentNetwork === 'base' ? 'Base' : 'Optimism';
+    
     const fallback = {
-        name: `ApeCoin NFT #${tokenId}`,
+        name: `${networkName} NFT #${tokenId}`,
         image: generateFallbackImage(tokenId),
-        description: 'ApeCoin NFT from ApeChain',
+        description: `${networkName} NFT from ${NETWORKS[currentNetwork].chainName}`,
         attributes: [],
         tokenURI: ''
     };
