@@ -226,7 +226,7 @@ connectWalletBtn.addEventListener('click', () => {
 
 function detectMultipleWallets() {
     const wallets = [];
-    if (window.ethereum && !window.ethereum.isCoinbaseWallet) wallets.push('MetaMask');
+    if (window.ethereum && !window.ethereum.isCoinbaseWallet) wallets.push('Ethereum Wallet');
     if (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension) wallets.push('Coinbase');
     return wallets.length > 1;
 }
@@ -237,7 +237,7 @@ function showWalletSelector() {
     
     select.innerHTML = '<option value="">Select Wallet</option>';
     
-    if (window.ethereum && !window.ethereum.isCoinbaseWallet) select.innerHTML += '<option value="metamask">MetaMask</option>';
+    if (window.ethereum && !window.ethereum.isCoinbaseWallet) select.innerHTML += '<option value="ethereum">Ethereum Wallet</option>';
     if (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension) select.innerHTML += '<option value="coinbase">Coinbase Wallet</option>';
     
     selector.classList.remove('hidden');
@@ -255,7 +255,7 @@ function showWalletSelector() {
 async function connectSpecificWallet(walletType) {
     try {
         switch (walletType) {
-            case 'metamask':
+            case 'ethereum':
                 await connectEthereumWallet(window.ethereum);
                 break;
             case 'coinbase':
@@ -450,7 +450,7 @@ async function connectWallet() {
             const coinbaseWalletUrl = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`;
             window.open(coinbaseWalletUrl, '_blank');
         } else {
-            alert('Please install MetaMask or Coinbase Wallet');
+            alert('Please install an Ethereum wallet');
         }
     }
 }
@@ -1776,22 +1776,38 @@ async function loadBaseNFTs() {
 async function scanTransferEvents() {
     const provider = window.coinbaseWalletExtension || window.ethereum;
     const latestBlock = await provider.request({ method: 'eth_blockNumber' });
-    const fromBlock = '0x' + Math.max(0, parseInt(latestBlock, 16) - 10000).toString(16);
+    const fromBlock = '0x' + Math.max(0, parseInt(latestBlock, 16) - 100000).toString(16);
     
-    const logs = await provider.request({
+    // Scan for both ERC721 and ERC1155 transfers
+    const erc721Logs = await provider.request({
         method: 'eth_getLogs',
         params: [{
             fromBlock,
             toBlock: 'latest',
             topics: [
-                '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // Transfer event
+                '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // ERC721 Transfer
                 null,
-                '0x' + userAccount.slice(2).padStart(64, '0') // to address
+                '0x' + userAccount.slice(2).padStart(64, '0')
             ]
         }]
     });
     
-    return logs.map(log => log.address).filter((addr, i, arr) => arr.indexOf(addr) === i);
+    const erc1155Logs = await provider.request({
+        method: 'eth_getLogs',
+        params: [{
+            fromBlock,
+            toBlock: 'latest',
+            topics: [
+                '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62', // ERC1155 TransferSingle
+                null,
+                null,
+                '0x' + userAccount.slice(2).padStart(64, '0')
+            ]
+        }]
+    });
+    
+    const allLogs = [...erc721Logs, ...erc1155Logs];
+    return allLogs.map(log => log.address).filter((addr, i, arr) => arr.indexOf(addr) === i);
 }
 
 async function scanFoundContracts(contracts) {
