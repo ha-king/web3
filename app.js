@@ -119,7 +119,10 @@ const MAGICEDEN_BASE_URL = 'https://api-mainnet.magiceden.dev/v2';
 
 // Alchemy API configuration
 const ALCHEMY_API_KEY = 'alcht_2pMoCHtaV57zHiLREXewLVSdZKoaCM';
-const ALCHEMY_BASE_URL = 'https://eth-mainnet.g.alchemy.com/nft/v3';
+const ALCHEMY_URLS = {
+    ethereum: 'https://eth-mainnet.g.alchemy.com/nft/v3',
+    base: 'https://base-mainnet.g.alchemy.com/nft/v3'
+};
 
 // Moralis API configuration
 const MORALIS_API_KEY = 'your-moralis-api-key';
@@ -563,7 +566,7 @@ async function loadNFTs() {
             await loadAlchemyNFTs();
             return;
         } else if (currentNetwork === 'base') {
-            await loadBaseNFTs();
+            await loadAlchemyBaseNFTs();
             return;
         } else if (currentNetwork === 'apechain' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
             await loadDirectContractNFTs();
@@ -1153,17 +1156,26 @@ async function loadAllETHNFTs() {
 }
 
 async function loadAlchemyNFTs() {
+    await loadAlchemyForNetwork('ethereum', 'Ethereum NFT Collection', 'ethNFTData', showEthNFTModal);
+}
+
+async function loadAlchemyBaseNFTs() {
+    await loadAlchemyForNetwork('base', 'Base NFT Collection', 'baseNFTData', showBaseNFTModal);
+}
+
+async function loadAlchemyForNetwork(network, title, dataVar, modalFunc) {
     const nftContainer = document.getElementById('nftContainer');
-    const networkConfig = NETWORKS[currentNetwork];
+    const networkConfig = NETWORKS[network];
     
     nftContainer.innerHTML = `
         <div class="coin-loader">
             <div class="coin has-logo" style="background-image: url('logo.jpg'); background-size: cover;"></div>
-            <div class="loading-text">Loading Ethereum NFTs...</div>
+            <div class="loading-text">Loading ${networkConfig.chainName} NFTs...</div>
         </div>`;
     
     try {
-        const response = await fetch(`${ALCHEMY_BASE_URL}/${ALCHEMY_API_KEY}/getNFTsForOwner?owner=${userAccount}&withMetadata=true&pageSize=100`);
+        const alchemyUrl = ALCHEMY_URLS[network];
+        const response = await fetch(`${alchemyUrl}/${ALCHEMY_API_KEY}/getNFTsForOwner?owner=${userAccount}&withMetadata=true&pageSize=100`);
         const data = await response.json();
         
         const nfts = (data.ownedNfts || []).map(nft => ({
@@ -1177,7 +1189,7 @@ async function loadAlchemyNFTs() {
         }));
         
         if (nfts.length === 0) {
-            nftContainer.innerHTML = `<p>No NFTs found on Ethereum</p>`;
+            nftContainer.innerHTML = `<p>No NFTs found on ${networkConfig.chainName}</p>`;
             return;
         }
         
@@ -1185,16 +1197,16 @@ async function loadAlchemyNFTs() {
             <div class="collection-header">
                 <div class="collection-title">
                     <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
-                    <h3>Ethereum NFT Collection</h3>
+                    <h3>${title}</h3>
                 </div>
-                <p class="collection-description">Your NFTs on Ethereum via Alchemy</p>
+                <p class="collection-description">Your NFTs on ${networkConfig.chainName} via Alchemy</p>
                 <div class="collection-stats">
                     <span class="stat">Total NFTs: <strong>${nfts.length}</strong></span>
                 </div>
             </div>
             <div class="nft-gallery">
                 ${nfts.map((nft, index) => 
-                    `<div class="nft-card" onclick="showEthNFTModal(${index})">
+                    `<div class="nft-card" onclick="${modalFunc.name}(${index})">
                         <img src="${nft.image}" alt="${nft.name}" class="nft-image" onerror="this.src='${generateFallbackImage(nft.tokenId)}'">
                         <div class="nft-info">
                             <h4>${nft.name}</h4>
@@ -1204,11 +1216,11 @@ async function loadAlchemyNFTs() {
                 ).join('')}
             </div>`;
         
-        window.ethNFTData = nfts;
+        window[dataVar] = nfts;
         
     } catch (error) {
         console.error('Alchemy API error:', error);
-        nftContainer.innerHTML = '<p>Error loading Ethereum NFTs</p>';
+        nftContainer.innerHTML = `<p>Error loading ${networkConfig.chainName} NFTs</p>`;
     }
 }
 
@@ -1261,7 +1273,7 @@ function showEthNFTModal(index) {
 }
 
 async function fetchAlchemyNFTs() {
-    const response = await fetch(`${ALCHEMY_BASE_URL}/${ALCHEMY_API_KEY}/getNFTsForOwner?owner=${userAccount}&withMetadata=true&pageSize=100`);
+    const response = await fetch(`${ALCHEMY_URLS.ethereum}/${ALCHEMY_API_KEY}/getNFTsForOwner?owner=${userAccount}&withMetadata=true&pageSize=100`);
     const data = await response.json();
     
     return (data.ownedNfts || []).map(nft => ({
