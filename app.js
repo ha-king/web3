@@ -1551,8 +1551,25 @@ async function loadDirectContractNFTs() {
                                 );
                                 
                                 const newTokens = await Promise.all(metadataPromises);
-                                allTokens.push(...newTokens);
                                 
+                                // Get purchase prices for ApeChain tokens
+                                if (currentNetwork === 'apechain') {
+                                    const averagePrice = await getCollectionAveragePrice(contractInfo.address);
+                                    const pricePromises = ownedIds.map(id => getNFTPurchasePrice(contractInfo.address, id, averagePrice));
+                                    const purchasePrices = await Promise.all(pricePromises);
+                                    
+                                    newTokens.forEach((token, index) => {
+                                        token.purchasePrice = purchasePrices[index];
+                                    });
+                                    
+                                    // Calculate collection value
+                                    const apeCoinPrice = await getApeCoinPrice();
+                                    const allPrices = [...allTokens, ...newTokens].map(token => token.purchasePrice || averagePrice || 55);
+                                    const { totalApe, totalUsd } = calculateCollectionValue(allPrices, apeCoinPrice);
+                                    contractInfo.collectionValue = { totalApe, totalUsd };
+                                }
+                                
+                                allTokens.push(...newTokens);
                                 updateNFTDisplay(contractInfo, allTokens, tokenCount);
                             }
                         } catch (e) {
