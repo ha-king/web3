@@ -151,13 +151,7 @@ const NETWORKS = {
         blockExplorerUrls: ['https://optimistic.etherscan.io'],
         logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiNGRjAwNDIiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI5IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T1A8L3RleHQ+Cjwvc3ZnPg=='
     },
-    solana: {
-        chainName: 'Solana Mainnet',
-        nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
-        rpcUrls: ['https://api.mainnet-beta.solana.com'],
-        blockExplorerUrls: ['https://explorer.solana.com'],
-        logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiM5OTQ1RkYiLz4KPHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPnNvbDwvdGV4dD4KPC9zdmc+'
-    }
+
 };
 
 const networkSelect = document.getElementById('networkSelect');
@@ -176,20 +170,18 @@ networkSelect.addEventListener('change', async (e) => {
         document.getElementById('nftContainer').innerHTML = '';
         document.getElementById('nftContainer').classList.add('hidden');
         
-        // Switch wallet to new network if not Solana
-        if (currentNetwork !== 'solana') {
-            try {
-                const provider = window.coinbaseWalletExtension || window.ethereum;
-                const networkConfig = NETWORKS[currentNetwork];
-                
-                if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
-                    await addNetwork(networkConfig, provider);
-                } else {
-                    await switchToNetwork(networkConfig.chainId, provider);
-                }
-            } catch (error) {
-                console.log('Network switch failed:', error);
+        // Switch wallet to new network
+        try {
+            const provider = window.coinbaseWalletExtension || window.ethereum;
+            const networkConfig = NETWORKS[currentNetwork];
+            
+            if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+                await addNetwork(networkConfig, provider);
+            } else {
+                await switchToNetwork(networkConfig.chainId, provider);
             }
+        } catch (error) {
+            console.log('Network switch failed:', error);
         }
         
         // Update network display
@@ -201,7 +193,7 @@ networkSelect.addEventListener('change', async (e) => {
         localStorage.setItem('connectedNetwork', currentNetwork);
         
         // Reload NFTs for new network
-        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'solana') {
+        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
             document.getElementById('nftContainer').classList.remove('hidden');
             await loadNFTs();
         }
@@ -221,7 +213,6 @@ function detectMultipleWallets() {
     const wallets = [];
     if (window.ethereum && !window.ethereum.isCoinbaseWallet) wallets.push('MetaMask');
     if (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension) wallets.push('Coinbase');
-    if (window.solana?.isPhantom) wallets.push('Phantom');
     return wallets.length > 1;
 }
 
@@ -233,7 +224,6 @@ function showWalletSelector() {
     
     if (window.ethereum && !window.ethereum.isCoinbaseWallet) select.innerHTML += '<option value="metamask">MetaMask</option>';
     if (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension) select.innerHTML += '<option value="coinbase">Coinbase Wallet</option>';
-    if (window.solana?.isPhantom) select.innerHTML += '<option value="phantom">Phantom</option>';
     
     selector.classList.remove('hidden');
     connectWalletBtn.textContent = 'Cancel';
@@ -257,9 +247,7 @@ async function connectSpecificWallet(walletType) {
                 const coinbaseProvider = window.coinbaseWalletExtension || window.ethereum;
                 await connectEthereumWallet(coinbaseProvider);
                 break;
-            case 'phantom':
-                await connectPhantomWallet();
-                break;
+
         }
     } catch (error) {
         console.error('Wallet connection failed:', error);
@@ -290,15 +278,11 @@ async function connectEthereumWallet(provider) {
     localStorage.setItem('connectedNetwork', currentNetwork);
     localStorage.setItem('walletType', 'ethereum');
     
-    if (currentNetwork !== 'solana') {
-        document.getElementById('nftContainer').classList.remove('hidden');
-        await loadNFTs();
-    }
+    document.getElementById('nftContainer').classList.remove('hidden');
+    await loadNFTs();
 }
 
-async function connectPhantomWallet() {
-    await connectSolanaWallet();
-}
+
 
 
 
@@ -334,11 +318,7 @@ async function checkPreviousConnection() {
         // Update UI immediately
         const networkConfig = NETWORKS[currentNetwork];
         
-        if (savedNetwork === 'solana') {
-            walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
-        } else {
-            walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(38);
-        }
+        walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(38);
         
         currentNetworkSpan.textContent = networkConfig.chainName;
         balanceSymbol.textContent = networkConfig.nativeCurrency.symbol;
@@ -348,7 +328,7 @@ async function checkPreviousConnection() {
         connectWalletBtn.disabled = true;
         
         // Try to get fresh balance for non-Solana networks
-        if (savedNetwork !== 'solana' && (window.ethereum || window.coinbaseWalletExtension)) {
+        if (window.ethereum || window.coinbaseWalletExtension) {
             try {
                 const provider = window.coinbaseWalletExtension || window.ethereum;
                 const balance = await provider.request({
@@ -365,7 +345,7 @@ async function checkPreviousConnection() {
         }
         
         // Load NFTs if supported network
-        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'solana') {
+        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
             document.getElementById('nftContainer').classList.remove('hidden');
             await loadNFTs();
         }
@@ -394,10 +374,6 @@ async function updateWalletDisplay() {
 }
 
 async function connectWallet() {
-    if (currentNetwork === 'solana') {
-        await connectSolanaWallet();
-        return;
-    }
     
     // Check for mobile wallets first
     if (window.ethereum || window.coinbaseWalletExtension) {
@@ -439,12 +415,7 @@ async function connectWallet() {
             localStorage.setItem('walletAddress', userAccount);
             localStorage.setItem('connectedNetwork', currentNetwork);
             
-            // Persist Solana connection
-            if (currentNetwork === 'solana') {
-                localStorage.setItem('walletType', 'solana');
-            } else {
-                localStorage.setItem('walletType', 'ethereum');
-            }
+            localStorage.setItem('walletType', 'ethereum');
             
             if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
                 document.getElementById('nftContainer').classList.remove('hidden');
@@ -491,56 +462,7 @@ async function switchToNetwork(chainId, provider = window.ethereum) {
     }
 }
 
-async function connectSolanaWallet() {
-    try {
-        let provider = null;
-        
-        // Check for any Solana provider
-        if (window.solana) {
-            provider = window.solana;
-        } else if (window.phantom?.solana) {
-            provider = window.phantom.solana;
-        } else {
-            // No Solana wallet found
-            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                window.open('https://phantom.app/download', '_blank');
-            } else {
-                alert('Please install Phantom wallet for Solana');
-            }
-            return;
-        }
-        
-        // Connect to Solana wallet
-        const response = await provider.connect({ onlyIfTrusted: false });
-        userAccount = response.publicKey.toString();
-        
-        // Update UI
-        walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
-        currentNetworkSpan.textContent = 'Solana Mainnet';
-        balanceSymbol.textContent = 'SOL';
-        walletBalance.textContent = '0.0000';
-        
-        walletInfo.classList.remove('hidden');
-        connectWalletBtn.textContent = 'Connected';
-        connectWalletBtn.disabled = true;
-        
-        localStorage.setItem('walletConnected', 'true');
-        localStorage.setItem('walletAddress', userAccount);
-        localStorage.setItem('connectedNetwork', 'solana');
-        localStorage.setItem('walletType', 'solana');
-        
-        document.getElementById('nftContainer').classList.remove('hidden');
-        document.getElementById('nftContainer').innerHTML = '<p>Solana wallet connected successfully</p>';
-        
-    } catch (error) {
-        console.error('Solana connection error:', error);
-        if (error.code === 4001) {
-            alert('Connection rejected by user');
-        } else {
-            alert('Please install Phantom wallet and try again');
-        }
-    }
-}
+
 
 async function getTotalSupplyFromMagicEden(contractAddress) {
     try {
