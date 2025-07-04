@@ -1186,7 +1186,7 @@ async function loadBaseNFTsFromTransaction() {
         console.log('Transaction hash:', txHash);
         console.log('User account:', userAccount);
         console.log('Receipt logs count:', receipt.logs.length);
-        console.log('Block number:', receipt.blockNumber);
+        console.log('Block number:', receipt.blockNumber, '(decimal:', parseInt(receipt.blockNumber, 16), ')');
         console.log('========================');
         
         // Parse logs for NFT transfers/mints
@@ -1809,7 +1809,9 @@ async function loadBaseNFTs() {
 async function scanTransferEvents() {
     const provider = window.coinbaseWalletExtension || window.ethereum;
     const latestBlock = await provider.request({ method: 'eth_blockNumber' });
-    const fromBlock = '0x' + Math.max(0, parseInt(latestBlock, 16) - 200000).toString(16);
+    // Include the specific transaction block (0x1eec372 = 31,704,946)
+    const targetBlock = 0x1eec372;
+    const fromBlock = '0x' + Math.max(targetBlock - 1000, parseInt(latestBlock, 16) - 500000).toString(16);
     
     // Scan for ERC721 transfers (including mints from 0x0)
     const erc721Logs = await provider.request({
