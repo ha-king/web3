@@ -626,7 +626,10 @@ async function loadNFTs() {
         if (currentNetwork === 'ethereum') {
             await loadAlchemyNFTs();
             return;
-        } else if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+        } else if (currentNetwork === 'base') {
+            await loadBaseNFTs();
+            return;
+        } else if (currentNetwork === 'apechain' || currentNetwork === 'optimism') {
             await loadDirectContractNFTs();
             return;
         }
@@ -1647,6 +1650,189 @@ function showMagicEdenNFTModal(index) {
                     <span class="metadata-label">MagicEden</span>
                     <div class="metadata-value"><a href="${nft.magiceden_url}" target="_blank" class="collection-link">View on MagicEden</a></div>
                 </div>
+            </div>
+            ${nft.description ? `<div class="metadata-section">
+                <h4>Description</h4>
+                <div class="metadata-item">
+                    <div class="metadata-value">${nft.description}</div>
+                </div>
+            </div>` : ''}
+            ${nft.attributes && nft.attributes.length > 0 ? `<div class="attributes-section">
+                <h4>Attributes</h4>
+                <div class="attributes-2col">
+                    ${nft.attributes.map(attr => `
+                        <div class="attribute-row">
+                            <div class="attribute-trait">${attr.trait_type}</div>
+                            <div class="attribute-value">${attr.value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>` : ''}
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+}
+
+async function loadBaseNFTs() {
+    const nftContainer = document.getElementById('nftContainer');
+    const networkConfig = NETWORKS[currentNetwork];
+    
+    nftContainer.innerHTML = `
+        <div class="coin-loader">
+            <div class="coin has-logo" style="background-image: url('logo.jpg'); background-size: cover;"></div>
+            <div class="loading-text">Discovering Base NFTs...</div>
+        </div>`;
+    
+    try {
+        const allNFTs = [];
+        
+        // Method 1: Try OpenSea API for Base
+        try {
+            const response = await fetch(`${OPENSEA_BASE_URL}/chain/base/account/${userAccount}/nfts`, {
+                headers: { 'X-API-KEY': OPENSEA_API_KEY }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const nfts = (data.nfts || []).map(nft => ({
+                    tokenId: nft.identifier,
+                    name: nft.name || `#${nft.identifier}`,
+                    image: nft.image_url || nft.display_image_url,
+                    description: nft.description,
+                    contract: nft.contract,
+                    collection: nft.collection,
+                    attributes: nft.traits || [],
+                    opensea_url: nft.opensea_url
+                }));
+                allNFTs.push(...nfts);
+            }
+        } catch (e) {
+            console.log('OpenSea Base API failed:', e);
+        }
+        
+        // Method 2: Scan Transfer events to find NFT contracts
+        if (allNFTs.length === 0) {
+            try {
+                const transferEvents = await scanTransferEvents();
+                const contractNFTs = await scanFoundContracts(transferEvents);
+                allNFTs.push(...contractNFTs);
+            } catch (e) {
+                console.log('Event scanning failed:', e);
+            }
+        }
+        
+        if (allNFTs.length === 0) {
+            nftContainer.innerHTML = `<p>No NFTs found on Base network</p><p><small>Make sure your wallet is connected to Base network</small></p>`;
+            return;
+        }
+        
+        nftContainer.innerHTML = `
+            <div class="collection-header">
+                <div class="collection-title">
+                    <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                    <h3>Base NFT Collection</h3>
+                </div>
+                <p class="collection-description">Your NFTs on Base Network</p>
+                <div class="collection-stats">
+                    <span class="stat">Total NFTs: <strong>${allNFTs.length}</strong></span>
+                </div>
+            </div>
+            <div class="nft-gallery">
+                ${allNFTs.map((nft, index) => 
+                    `<div class="nft-card" onclick="showBaseNFTModal(${index})">
+                        <img src="${nft.image}" alt="${nft.name}" class="nft-image" onerror="this.src='${generateFallbackImage(nft.tokenId)}'">
+                        <div class="nft-info">
+                            <h4>${nft.name}</h4>
+                            <p>Token ID: ${nft.tokenId}</p>
+                        </div>
+                    </div>`
+                ).join('')}
+            </div>`;
+        
+        window.baseNFTData = allNFTs;
+        
+    } catch (error) {
+        console.error('Base NFT loading error:', error);
+        nftContainer.innerHTML = '<p>Error loading Base NFTs</p>';
+    }
+}
+
+async function scanTransferEvents() {
+    const provider = window.coinbaseWalletExtension || window.ethereum;
+    const latestBlock = await provider.request({ method: 'eth_blockNumber' });
+    const fromBlock = '0x' + Math.max(0, parseInt(latestBlock, 16) - 10000).toString(16);
+    
+    const logs = await provider.request({
+        method: 'eth_getLogs',
+        params: [{
+            fromBlock,
+            toBlock: 'latest',
+            topics: [
+                '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // Transfer event
+                null,
+                '0x' + userAccount.slice(2).padStart(64, '0') // to address
+            ]
+        }]
+    });
+    
+    return logs.map(log => log.address).filter((addr, i, arr) => arr.indexOf(addr) === i);
+}
+
+async function scanFoundContracts(contracts) {
+    const nfts = [];
+    for (const contract of contracts.slice(0, 10)) { // Limit to 10 contracts
+        try {
+            const balance = await checkERC721Balance(contract);
+            if (balance > 0) {
+                for (let i = 1; i <= Math.min(balance, 50); i++) {
+                    try {
+                        const owned = await checkTokenOwnership(contract, i);
+                        if (owned) {
+                            const metadata = await getTokenMetadata(contract, i);
+                            nfts.push({ contract, tokenId: i, ...metadata });
+                        }
+                    } catch (e) {}
+                }
+            }
+        } catch (e) {}
+    }
+    return nfts;
+}
+
+async function checkERC721Balance(contract) {
+    const provider = window.coinbaseWalletExtension || window.ethereum;
+    const balanceData = '0x70a08231' + userAccount.slice(2).padStart(64, '0');
+    const balance = await provider.request({
+        method: 'eth_call',
+        params: [{ to: contract, data: balanceData }, 'latest']
+    });
+    return parseInt(balance, 16);
+}
+
+function showBaseNFTModal(index) {
+    const nft = window.baseNFTData[index];
+    const modal = document.getElementById('nftModal');
+    
+    document.querySelector('.modal-body').innerHTML = `
+        <div class="modal-image-section">
+            <img class="modal-image" src="${nft.image}" alt="${nft.name}">
+        </div>
+        <div class="modal-info">
+            <h3>${nft.name}</h3>
+            <div class="metadata-section">
+                <h4>Token Details</h4>
+                <div class="metadata-item">
+                    <span class="metadata-label">Token ID</span>
+                    <div class="metadata-value">${nft.tokenId}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Contract</span>
+                    <div class="metadata-value">${nft.contract}</div>
+                </div>
+                ${nft.opensea_url ? `<div class="metadata-item">
+                    <span class="metadata-label">OpenSea</span>
+                    <div class="metadata-value"><a href="${nft.opensea_url}" target="_blank" class="collection-link">View on OpenSea</a></div>
+                </div>` : ''}
             </div>
             ${nft.description ? `<div class="metadata-section">
                 <h4>Description</h4>
