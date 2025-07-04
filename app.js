@@ -176,6 +176,22 @@ networkSelect.addEventListener('change', async (e) => {
         document.getElementById('nftContainer').innerHTML = '';
         document.getElementById('nftContainer').classList.add('hidden');
         
+        // Switch wallet to new network if not Solana
+        if (currentNetwork !== 'solana') {
+            try {
+                const provider = window.coinbaseWalletExtension || window.ethereum;
+                const networkConfig = NETWORKS[currentNetwork];
+                
+                if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+                    await addNetwork(networkConfig, provider);
+                } else {
+                    await switchToNetwork(networkConfig.chainId, provider);
+                }
+            } catch (error) {
+                console.log('Network switch failed:', error);
+            }
+        }
+        
         // Update network display
         const networkConfig = NETWORKS[currentNetwork];
         currentNetworkSpan.textContent = networkConfig.chainName;
