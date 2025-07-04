@@ -185,7 +185,7 @@ connectWalletBtn.addEventListener('click', connectWallet);
 showMainContent();
 
 // Check for previously connected wallet on page load
-window.addEventListener('load', checkPreviousConnection);
+checkPreviousConnection();
 
 // Auto-connect if opened in Coinbase Wallet mobile view
 if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent)) {
@@ -200,6 +200,7 @@ async function checkPreviousConnection() {
     const wasConnected = localStorage.getItem('walletConnected');
     const savedAddress = localStorage.getItem('walletAddress');
     const savedNetwork = localStorage.getItem('connectedNetwork');
+    const walletType = localStorage.getItem('walletType');
     
     if (wasConnected && savedAddress && savedNetwork) {
         currentNetwork = savedNetwork;
@@ -208,7 +209,13 @@ async function checkPreviousConnection() {
         
         // Update UI immediately
         const networkConfig = NETWORKS[currentNetwork];
-        walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(38);
+        
+        if (savedNetwork === 'solana') {
+            walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
+        } else {
+            walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(38);
+        }
+        
         currentNetworkSpan.textContent = networkConfig.chainName;
         balanceSymbol.textContent = networkConfig.nativeCurrency.symbol;
         
@@ -216,8 +223,8 @@ async function checkPreviousConnection() {
         connectWalletBtn.textContent = 'Connected';
         connectWalletBtn.disabled = true;
         
-        // Try to get fresh balance
-        if (window.ethereum || window.coinbaseWalletExtension) {
+        // Try to get fresh balance for non-Solana networks
+        if (savedNetwork !== 'solana' && (window.ethereum || window.coinbaseWalletExtension)) {
             try {
                 const provider = window.coinbaseWalletExtension || window.ethereum;
                 const balance = await provider.request({
@@ -229,10 +236,12 @@ async function checkPreviousConnection() {
             } catch (e) {
                 walletBalance.textContent = '0.0000';
             }
+        } else {
+            walletBalance.textContent = '0.0000';
         }
         
         // Load NFTs if supported network
-        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+        if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'solana') {
             document.getElementById('nftContainer').classList.remove('hidden');
             await loadNFTs();
         }
@@ -305,6 +314,13 @@ async function connectWallet() {
             localStorage.setItem('walletConnected', 'true');
             localStorage.setItem('walletAddress', userAccount);
             localStorage.setItem('connectedNetwork', currentNetwork);
+            
+            // Persist Solana connection
+            if (currentNetwork === 'solana') {
+                localStorage.setItem('walletType', 'solana');
+            } else {
+                localStorage.setItem('walletType', 'ethereum');
+            }
             
             if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
                 document.getElementById('nftContainer').classList.remove('hidden');
@@ -1703,6 +1719,7 @@ function logoutWallet() {
     localStorage.removeItem('walletConnected');
     localStorage.removeItem('walletAddress');
     localStorage.removeItem('connectedNetwork');
+    localStorage.removeItem('walletType');
     
     walletInfo.classList.add('hidden');
     connectWalletBtn.textContent = 'Connect Wallet';
