@@ -185,16 +185,18 @@ connectWalletBtn.addEventListener('click', connectWallet);
 showMainContent();
 
 // Check for previously connected wallet on page load
-checkPreviousConnection();
+document.addEventListener('DOMContentLoaded', checkPreviousConnection);
 
 // Auto-connect if opened in Coinbase Wallet mobile view
-if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent)) {
-    setTimeout(() => {
-        if (!userAccount && currentNetwork === 'apechain') {
-            connectWallet();
-        }
-    }, 1000);
-}
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent)) {
+        setTimeout(() => {
+            if (!userAccount && currentNetwork === 'apechain') {
+                connectWallet();
+            }
+        }, 1000);
+    }
+});
 
 async function checkPreviousConnection() {
     const wasConnected = localStorage.getItem('walletConnected');
