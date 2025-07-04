@@ -111,7 +111,7 @@ const OPENSEA_BASE_URL = 'https://api.opensea.io/api/v2';
 const MAGICEDEN_BASE_URL = 'https://api-mainnet.magiceden.dev/v2';
 
 // Alchemy API configuration
-const ALCHEMY_API_KEY = 'your-alchemy-api-key';
+const ALCHEMY_API_KEY = 'alcht_2pMoCHtaV57zHiLREXewLVSdZKoaCM';
 const ALCHEMY_BASE_URL = 'https://eth-mainnet.g.alchemy.com/nft/v3';
 
 // Moralis API configuration
@@ -366,13 +366,16 @@ async function connectSolanaWallet() {
             connectWalletBtn.textContent = 'Connected';
             connectWalletBtn.disabled = true;
             
+            localStorage.setItem('walletConnected', 'true');
+            localStorage.setItem('walletAddress', userAccount);
+            localStorage.setItem('connectedNetwork', currentNetwork);
+            
             if (currentNetwork === 'solana') {
                 document.getElementById('nftContainer').classList.remove('hidden');
-                // Solana NFT loading not implemented yet
-                document.getElementById('nftContainer').innerHTML = '<p>Solana NFT support coming soon</p>';
+                document.getElementById('nftContainer').innerHTML = '<p>Please install Phantom wallet for Solana NFT support</p>';
             }
         } else {
-            alert('Please install Phantom wallet for Solana');
+            window.open('https://phantom.app/', '_blank');
         }
     } catch (error) {
         console.error('Solana wallet connection failed:', error);
@@ -540,7 +543,7 @@ async function loadNFTs() {
     try {
         // Load NFTs based on network
         if (currentNetwork === 'ethereum') {
-            await loadDirectContractNFTs();
+            await loadAlchemyNFTs();
             return;
         } else if (currentNetwork === 'base' || currentNetwork === 'optimism') {
             await loadDirectContractNFTs();
@@ -1122,6 +1125,114 @@ async function loadAllETHNFTs() {
         console.error('NFT discovery error:', error);
         nftContainer.innerHTML = '<p>Error discovering NFTs</p>';
     }
+}
+
+async function loadAlchemyNFTs() {
+    const nftContainer = document.getElementById('nftContainer');
+    const networkConfig = NETWORKS[currentNetwork];
+    
+    nftContainer.innerHTML = `
+        <div class="coin-loader">
+            <div class="coin has-logo" style="background-image: url('logo.jpg'); background-size: cover;"></div>
+            <div class="loading-text">Loading Ethereum NFTs...</div>
+        </div>`;
+    
+    try {
+        const response = await fetch(`${ALCHEMY_BASE_URL}/${ALCHEMY_API_KEY}/getNFTsForOwner?owner=${userAccount}&withMetadata=true&pageSize=100`);
+        const data = await response.json();
+        
+        const nfts = (data.ownedNfts || []).map(nft => ({
+            tokenId: nft.tokenId,
+            name: nft.name || nft.title || `#${nft.tokenId}`,
+            image: nft.image?.originalUrl || nft.image?.cachedUrl || nft.media?.[0]?.gateway,
+            description: nft.description,
+            contract: nft.contract.address,
+            collection: nft.contract.name,
+            attributes: nft.rawMetadata?.attributes || []
+        }));
+        
+        if (nfts.length === 0) {
+            nftContainer.innerHTML = `<p>No NFTs found on Ethereum</p>`;
+            return;
+        }
+        
+        nftContainer.innerHTML = `
+            <div class="collection-header">
+                <div class="collection-title">
+                    <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                    <h3>Ethereum NFT Collection</h3>
+                </div>
+                <p class="collection-description">Your NFTs on Ethereum via Alchemy</p>
+                <div class="collection-stats">
+                    <span class="stat">Total NFTs: <strong>${nfts.length}</strong></span>
+                </div>
+            </div>
+            <div class="nft-gallery">
+                ${nfts.map((nft, index) => 
+                    `<div class="nft-card" onclick="showEthNFTModal(${index})">
+                        <img src="${nft.image}" alt="${nft.name}" class="nft-image" onerror="this.src='${generateFallbackImage(nft.tokenId)}'">
+                        <div class="nft-info">
+                            <h4>${nft.name}</h4>
+                            <p>Token ID: ${nft.tokenId}</p>
+                        </div>
+                    </div>`
+                ).join('')}
+            </div>`;
+        
+        window.ethNFTData = nfts;
+        
+    } catch (error) {
+        console.error('Alchemy API error:', error);
+        nftContainer.innerHTML = '<p>Error loading Ethereum NFTs</p>';
+    }
+}
+
+function showEthNFTModal(index) {
+    const nft = window.ethNFTData[index];
+    const modal = document.getElementById('nftModal');
+    
+    document.querySelector('.modal-body').innerHTML = `
+        <div class="modal-image-section">
+            <img class="modal-image" src="${nft.image}" alt="${nft.name}">
+        </div>
+        <div class="modal-info">
+            <h3>${nft.name}</h3>
+            <div class="metadata-section">
+                <h4>Token Details</h4>
+                <div class="metadata-item">
+                    <span class="metadata-label">Token ID</span>
+                    <div class="metadata-value">${nft.tokenId}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Contract</span>
+                    <div class="metadata-value">${nft.contract}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Collection</span>
+                    <div class="metadata-value">${nft.collection}</div>
+                </div>
+            </div>
+            ${nft.description ? `<div class="metadata-section">
+                <h4>Description</h4>
+                <div class="metadata-item">
+                    <div class="metadata-value">${nft.description}</div>
+                </div>
+            </div>` : ''}
+            ${nft.attributes && nft.attributes.length > 0 ? `<div class="attributes-section">
+                <h4>Attributes</h4>
+                <div class="attributes-2col">
+                    ${nft.attributes.map(attr => `
+                        <div class="attribute-row">
+                            <div class="attribute-trait">${attr.trait_type}</div>
+                            <div class="attribute-value">${attr.value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>` : ''}
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
 }
 
 async function fetchAlchemyNFTs() {
