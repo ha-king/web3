@@ -1,6 +1,7 @@
 let web3;
 let userAccount;
 let currentNetwork = 'ethereum';
+let currentLoadingNetwork = null;
 // Authentication disabled for dev environment
 
 // NFT Cache
@@ -182,18 +183,20 @@ const balanceSymbol = document.getElementById('balanceSymbol');
 
 
 networkSelect.addEventListener('change', async (e) => {
-    currentNetwork = e.target.value;
+    const newNetwork = e.target.value;
+    currentLoadingNetwork = newNetwork;
+    
     if (userAccount) {
-        // Clear current gallery
-        document.getElementById('nftContainer').innerHTML = '';
-        document.getElementById('nftContainer').classList.add('hidden');
+        // Update network display immediately
+        const networkConfig = NETWORKS[newNetwork];
+        currentNetworkSpan.textContent = networkConfig.chainName;
+        balanceSymbol.textContent = networkConfig.nativeCurrency.symbol;
         
         // Switch wallet to new network
         try {
             const provider = window.coinbaseWalletExtension || window.ethereum;
-            const networkConfig = NETWORKS[currentNetwork];
             
-            if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
+            if (newNetwork === 'apechain' || newNetwork === 'base' || newNetwork === 'optimism' || newNetwork === 'usdc') {
                 await addNetwork(networkConfig, provider);
             } else {
                 await switchToNetwork(networkConfig.chainId, provider);
@@ -202,22 +205,22 @@ networkSelect.addEventListener('change', async (e) => {
             console.log('Network switch failed:', error);
         }
         
-        // Update network display
-        const networkConfig = NETWORKS[currentNetwork];
-        currentNetworkSpan.textContent = networkConfig.chainName;
-        balanceSymbol.textContent = networkConfig.nativeCurrency.symbol;
-        
-        // Update localStorage
+        // Update current network only after successful switch
+        currentNetwork = newNetwork;
         localStorage.setItem('connectedNetwork', currentNetwork);
         
-        // Reload NFTs for new network
+        // Load NFTs for new network without clearing current view
         if (currentNetwork === 'ethereum' || currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
-            document.getElementById('nftContainer').classList.remove('hidden');
             await loadNFTs();
         }
-    } else if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent) && currentNetwork === 'apechain') {
+    } else if (window.ethereum && /CoinbaseWallet/i.test(navigator.userAgent) && newNetwork === 'apechain') {
+        currentNetwork = newNetwork;
         setTimeout(() => connectWallet(), 500);
+    } else {
+        currentNetwork = newNetwork;
     }
+    
+    currentLoadingNetwork = null;
 });
 connectWalletBtn.addEventListener('click', connectWallet);
 
@@ -550,25 +553,37 @@ async function loadNFTs() {
     const nftContainer = document.getElementById('nftContainer');
     if (!nftContainer) return;
     
-    const networkConfig = NETWORKS[currentNetwork];
-    const coinClass = 'coin has-logo';
-    const coinStyle = `style="background-image: url('logo.jpg'); background-size: cover;"`;
+    const loadingNetwork = currentNetwork;
+    const networkConfig = NETWORKS[loadingNetwork];
     
-    nftContainer.innerHTML = `
-        <div class="coin-loader">
-            <div class="${coinClass}" ${coinStyle}></div>
-            <div class="loading-text">Loading ${networkConfig.chainName} NFTs...</div>
-        </div>`;
+    // Only show loading if container is hidden or empty
+    if (nftContainer.classList.contains('hidden') || !nftContainer.innerHTML.trim()) {
+        const coinClass = 'coin has-logo';
+        const coinStyle = `style="background-image: url('logo.jpg'); background-size: cover;"`;
+        
+        nftContainer.innerHTML = `
+            <div class="coin-loader">
+                <div class="${coinClass}" ${coinStyle}></div>
+                <div class="loading-text">Loading ${networkConfig.chainName} NFTs...</div>
+            </div>`;
+        nftContainer.classList.remove('hidden');
+    }
     
     try {
+        // Check if network changed during loading
+        if (loadingNetwork !== currentNetwork) {
+            console.log('Network changed during loading, aborting');
+            return;
+        }
+        
         // Load NFTs based on network
-        if (currentNetwork === 'ethereum') {
+        if (loadingNetwork === 'ethereum') {
             await loadAlchemyNFTs();
             return;
-        } else if (currentNetwork === 'base') {
+        } else if (loadingNetwork === 'base') {
             await loadBaseNFTsFromTransaction();
             return;
-        } else if (currentNetwork === 'apechain' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
+        } else if (loadingNetwork === 'apechain' || loadingNetwork === 'optimism' || loadingNetwork === 'usdc') {
             await loadDirectContractNFTs();
             return;
         }
@@ -1809,9 +1824,12 @@ async function loadBaseNFTs() {
 async function scanTransferEvents() {
     const provider = window.coinbaseWalletExtension || window.ethereum;
     const latestBlock = await provider.request({ method: 'eth_blockNumber' });
-    // Include the specific transaction block (0x1eec372 = 31,704,946)
+    // Include the specific transaction block (0x1eec372 = 32,424,818)
     const targetBlock = 0x1eec372;
-    const fromBlock = '0x' + Math.max(targetBlock - 1000, parseInt(latestBlock, 16) - 500000).toString(16);
+    const fromBlock = '0x' + Math.min(targetBlock - 1000, parseInt(latestBlock, 16) - 1000000).toString(16);
+    
+    console.log('Scanning from block:', fromBlock, 'to latest:', latestBlock);
+    console.log('Target block:', '0x' + targetBlock.toString(16), 'decimal:', targetBlock);
     
     // Scan for ERC721 transfers (including mints from 0x0)
     const erc721Logs = await provider.request({
