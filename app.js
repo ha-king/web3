@@ -84,6 +84,9 @@ const OPTIMISM_NFT_CONTRACTS = [
 const OPENSEA_API_KEY = 'your-opensea-api-key'; // Get from https://docs.opensea.io/reference/api-keys
 const OPENSEA_BASE_URL = 'https://api.opensea.io/api/v2';
 
+// MagicEden API configuration
+const MAGICEDEN_BASE_URL = 'https://api-mainnet.magiceden.dev/v2';
+
 const NETWORKS = {
     ethereum: {
         chainId: '0x1',
@@ -504,8 +507,11 @@ async function loadNFTs() {
         </div>`;
     
     try {
-        // Load NFTs from OpenSea for supported networks
-        if (currentNetwork === 'ethereum' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+        // Load NFTs from MagicEden for Ethereum, OpenSea for others
+        if (currentNetwork === 'ethereum') {
+            await loadMagicEdenETHNFTs();
+            return;
+        } else if (currentNetwork === 'base' || currentNetwork === 'optimism') {
             await loadOpenSeaNFTs();
             return;
         }
@@ -1032,6 +1038,123 @@ function showOpenSeaNFTModal(index) {
                         <div class="attribute-row">
                             <div class="attribute-trait">${trait.trait_type}</div>
                             <div class="attribute-value">${trait.value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>` : ''}
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+}
+
+async function loadMagicEdenETHNFTs() {
+    const nftContainer = document.getElementById('nftContainer');
+    const networkConfig = NETWORKS[currentNetwork];
+    
+    try {
+        const response = await fetch(`${MAGICEDEN_BASE_URL}/wallets/${userAccount}/tokens?offset=0&limit=100`);
+        
+        if (!response.ok) throw new Error('MagicEden API error');
+        
+        const data = await response.json();
+        const nfts = data || [];
+        
+        if (nfts.length === 0) {
+            nftContainer.innerHTML = `<p>No ETH NFTs found on MagicEden</p>`;
+            return;
+        }
+        
+        const processedNFTs = nfts.map(nft => ({
+            tokenId: nft.tokenId,
+            name: nft.name || `#${nft.tokenId}`,
+            image: nft.image,
+            description: nft.description,
+            contract: nft.contract,
+            collection: nft.collectionName,
+            magiceden_url: `https://magiceden.io/item-details/ethereum/${nft.contract}/${nft.tokenId}`,
+            attributes: nft.attributes || []
+        }));
+        
+        displayMagicEdenNFTs(processedNFTs, networkConfig);
+        
+    } catch (error) {
+        console.error('MagicEden API error:', error);
+        nftContainer.innerHTML = '<p>Error loading ETH NFTs from MagicEden</p>';
+    }
+}
+
+function displayMagicEdenNFTs(nfts, networkConfig) {
+    const nftContainer = document.getElementById('nftContainer');
+    
+    nftContainer.innerHTML = `
+        <div class="collection-header">
+            <div class="collection-title">
+                <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                <h3>MagicEden ETH Collection</h3>
+            </div>
+            <p class="collection-description">Your ETH NFTs from MagicEden</p>
+            <div class="collection-stats">
+                <span class="stat">Total NFTs: <strong>${nfts.length}</strong></span>
+            </div>
+        </div>
+        <div class="nft-gallery">
+            ${nfts.map((nft, index) => 
+                `<div class="nft-card" onclick="showMagicEdenNFTModal(${index})">
+                    <img src="${nft.image}" alt="${nft.name}" class="nft-image" onerror="this.src='${generateFallbackImage(nft.tokenId)}'">
+                    <div class="nft-info">
+                        <h4>${nft.name}</h4>
+                        <p>Token ID: ${nft.tokenId}</p>
+                    </div>
+                </div>`
+            ).join('')}
+        </div>`;
+    
+    window.magicEdenNFTData = nfts;
+}
+
+function showMagicEdenNFTModal(index) {
+    const nft = window.magicEdenNFTData[index];
+    const modal = document.getElementById('nftModal');
+    
+    document.querySelector('.modal-body').innerHTML = `
+        <div class="modal-image-section">
+            <img class="modal-image" src="${nft.image}" alt="${nft.name}">
+        </div>
+        <div class="modal-info">
+            <h3>${nft.name}</h3>
+            <div class="metadata-section">
+                <h4>Token Details</h4>
+                <div class="metadata-item">
+                    <span class="metadata-label">Token ID</span>
+                    <div class="metadata-value">${nft.tokenId}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Contract</span>
+                    <div class="metadata-value">${nft.contract}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">Collection</span>
+                    <div class="metadata-value">${nft.collection}</div>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">MagicEden</span>
+                    <div class="metadata-value"><a href="${nft.magiceden_url}" target="_blank" class="collection-link">View on MagicEden</a></div>
+                </div>
+            </div>
+            ${nft.description ? `<div class="metadata-section">
+                <h4>Description</h4>
+                <div class="metadata-item">
+                    <div class="metadata-value">${nft.description}</div>
+                </div>
+            </div>` : ''}
+            ${nft.attributes && nft.attributes.length > 0 ? `<div class="attributes-section">
+                <h4>Attributes</h4>
+                <div class="attributes-2col">
+                    ${nft.attributes.map(attr => `
+                        <div class="attribute-row">
+                            <div class="attribute-trait">${attr.trait_type}</div>
+                            <div class="attribute-value">${attr.value}</div>
                         </div>
                     `).join('')}
                 </div>
