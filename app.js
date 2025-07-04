@@ -178,7 +178,128 @@ networkSelect.addEventListener('change', (e) => {
         setTimeout(() => connectWallet(), 500);
     }
 });
-connectWalletBtn.addEventListener('click', connectWallet);
+connectWalletBtn.addEventListener('click', () => {
+    if (detectMultipleWallets()) {
+        showWalletSelector();
+    } else {
+        connectWallet();
+    }
+});
+
+function detectMultipleWallets() {
+    const wallets = [];
+    if (window.ethereum) wallets.push('MetaMask/Ethereum');
+    if (window.coinbaseWalletExtension) wallets.push('Coinbase Wallet');
+    if (window.solana?.isPhantom) wallets.push('Phantom');
+    if (window.coinbaseSolana) wallets.push('Coinbase Solana');
+    return wallets.length > 1;
+}
+
+function showWalletSelector() {
+    const selector = document.getElementById('walletSelector');
+    const select = document.getElementById('walletSelect');
+    
+    select.innerHTML = '<option value="">Select Wallet</option>';
+    
+    if (window.ethereum) select.innerHTML += '<option value="ethereum">MetaMask/Ethereum</option>';
+    if (window.coinbaseWalletExtension) select.innerHTML += '<option value="coinbase">Coinbase Wallet</option>';
+    if (window.solana?.isPhantom) select.innerHTML += '<option value="phantom">Phantom</option>';
+    if (window.coinbaseSolana) select.innerHTML += '<option value="coinbase-solana">Coinbase Solana</option>';
+    
+    selector.classList.remove('hidden');
+    connectWalletBtn.textContent = 'Cancel';
+    
+    select.onchange = (e) => {
+        if (e.target.value) {
+            connectSpecificWallet(e.target.value);
+            selector.classList.add('hidden');
+            connectWalletBtn.textContent = 'Connect Wallet';
+        }
+    };
+}
+
+async function connectSpecificWallet(walletType) {
+    try {
+        switch (walletType) {
+            case 'ethereum':
+                await connectEthereumWallet(window.ethereum);
+                break;
+            case 'coinbase':
+                await connectEthereumWallet(window.coinbaseWalletExtension);
+                break;
+            case 'phantom':
+                await connectPhantomWallet();
+                break;
+            case 'coinbase-solana':
+                await connectCoinbaseSolanaWallet();
+                break;
+        }
+    } catch (error) {
+        console.error('Wallet connection failed:', error);
+        alert('Failed to connect wallet');
+    }
+}
+
+async function connectEthereumWallet(provider) {
+    const networkConfig = NETWORKS[currentNetwork];
+    
+    if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+        await addNetwork(networkConfig, provider);
+    }
+    
+    const accounts = await provider.request({ method: 'eth_requestAccounts' });
+    userAccount = accounts[0];
+    
+    await updateWalletDisplay();
+    
+    localStorage.setItem('walletConnected', 'true');
+    localStorage.setItem('walletAddress', userAccount);
+    localStorage.setItem('connectedNetwork', currentNetwork);
+    localStorage.setItem('walletType', 'ethereum');
+    
+    if (currentNetwork !== 'solana') {
+        document.getElementById('nftContainer').classList.remove('hidden');
+        await loadNFTs();
+    }
+}
+
+async function connectPhantomWallet() {
+    const response = await window.solana.connect();
+    userAccount = response.publicKey.toString();
+    
+    walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
+    currentNetworkSpan.textContent = 'Solana Mainnet';
+    balanceSymbol.textContent = 'SOL';
+    walletBalance.textContent = '0.0000';
+    
+    walletInfo.classList.remove('hidden');
+    connectWalletBtn.textContent = 'Connected';
+    connectWalletBtn.disabled = true;
+    
+    localStorage.setItem('walletConnected', 'true');
+    localStorage.setItem('walletAddress', userAccount);
+    localStorage.setItem('connectedNetwork', 'solana');
+    localStorage.setItem('walletType', 'solana');
+}
+
+async function connectCoinbaseSolanaWallet() {
+    const response = await window.coinbaseSolana.connect();
+    userAccount = response.publicKey.toString();
+    
+    walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
+    currentNetworkSpan.textContent = 'Solana Mainnet';
+    balanceSymbol.textContent = 'SOL';
+    walletBalance.textContent = '0.0000';
+    
+    walletInfo.classList.remove('hidden');
+    connectWalletBtn.textContent = 'Connected';
+    connectWalletBtn.disabled = true;
+    
+    localStorage.setItem('walletConnected', 'true');
+    localStorage.setItem('walletAddress', userAccount);
+    localStorage.setItem('connectedNetwork', 'solana');
+    localStorage.setItem('walletType', 'solana');
+}
 
 
 // Skip authentication in dev mode
