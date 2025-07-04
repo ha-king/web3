@@ -253,8 +253,14 @@ async function connectSpecificWallet(walletType) {
 async function connectEthereumWallet(provider) {
     const networkConfig = NETWORKS[currentNetwork];
     
-    if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
-        await addNetwork(networkConfig, provider);
+    try {
+        if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
+            await addNetwork(networkConfig, provider);
+        } else {
+            await switchToNetwork(networkConfig.chainId, provider);
+        }
+    } catch (networkError) {
+        console.log('Network switch failed, continuing anyway:', networkError.message);
     }
     
     const accounts = await provider.request({ method: 'eth_requestAccounts' });
@@ -681,7 +687,7 @@ async function loadNFTs() {
         if (currentNetwork === 'ethereum') {
             await loadAlchemyNFTs();
             return;
-        } else if (currentNetwork === 'base' || currentNetwork === 'optimism') {
+        } else if (currentNetwork === 'apechain' || currentNetwork === 'base' || currentNetwork === 'optimism') {
             await loadDirectContractNFTs();
             return;
         }
