@@ -3,11 +3,18 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 export class Web3ProdStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const alchemyApiSecret = new secretsmanager.Secret(this, 'AlchemyApiSecret', {
+      secretName: 'web3-app/alchemy-api-key',
+      description: 'Alchemy API key for Web3 NFT discovery',
+      secretStringValue: cdk.SecretValue.unsafePlainText('alcht_2pMoCHtaV57zHiLREXewLVSdZKoaCM')
+    });
 
     const bucket = new s3.Bucket(this, 'Web3ProdAppBucket', {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
