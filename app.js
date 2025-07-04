@@ -566,7 +566,7 @@ async function loadNFTs() {
             await loadAlchemyNFTs();
             return;
         } else if (currentNetwork === 'base') {
-            await loadAlchemyBaseNFTs();
+            await loadBaseNFTsFromTransaction();
             return;
         } else if (currentNetwork === 'apechain' || currentNetwork === 'optimism' || currentNetwork === 'usdc') {
             await loadDirectContractNFTs();
@@ -1157,6 +1157,81 @@ async function loadAllETHNFTs() {
 
 async function loadAlchemyNFTs() {
     await loadAlchemyForNetwork('ethereum', 'Ethereum NFT Collection', 'ethNFTData', showEthNFTModal);
+}
+
+async function loadBaseNFTsFromTransaction() {
+    const nftContainer = document.getElementById('nftContainer');
+    const networkConfig = NETWORKS[currentNetwork];
+    
+    nftContainer.innerHTML = `
+        <div class="coin-loader">
+            <div class="coin has-logo" style="background-image: url('logo.jpg'); background-size: cover;"></div>
+            <div class="loading-text">Loading Base NFTs...</div>
+        </div>`;
+    
+    try {
+        const txHash = '0x7a85e2527434c3ba8574fed0437923c6d9ceab840fe3e6f1929bd046ab6d88a8';
+        const provider = window.coinbaseWalletExtension || window.ethereum;
+        
+        // Get transaction receipt
+        const receipt = await provider.request({
+            method: 'eth_getTransactionReceipt',
+            params: [txHash]
+        });
+        
+        const nfts = [];
+        
+        // Parse logs for NFT transfers/mints
+        for (const log of receipt.logs) {
+            // Check if this log is a transfer to our user
+            if (log.topics.length >= 3) {
+                const toAddress = '0x' + log.topics[2].slice(-40);
+                if (toAddress.toLowerCase() === userAccount.toLowerCase()) {
+                    const tokenId = parseInt(log.topics[3] || log.data.slice(0, 66), 16);
+                    const metadata = await getTokenMetadata(log.address, tokenId);
+                    nfts.push({
+                        contract: log.address,
+                        tokenId,
+                        ...metadata
+                    });
+                }
+            }
+        }
+        
+        if (nfts.length === 0) {
+            nftContainer.innerHTML = `<p>No NFTs found from transaction ${txHash.slice(0, 10)}...</p>`;
+            return;
+        }
+        
+        nftContainer.innerHTML = `
+            <div class="collection-header">
+                <div class="collection-title">
+                    <img src="${networkConfig.logo}" alt="${networkConfig.chainName}" class="network-logo">
+                    <h3>Base NFT from Transaction</h3>
+                </div>
+                <p class="collection-description">NFT from transaction ${txHash.slice(0, 10)}...</p>
+                <div class="collection-stats">
+                    <span class="stat">NFTs Found: <strong>${nfts.length}</strong></span>
+                </div>
+            </div>
+            <div class="nft-gallery">
+                ${nfts.map((nft, index) => 
+                    `<div class="nft-card" onclick="showBaseNFTModal(${index})">
+                        <img src="${nft.image}" alt="${nft.name}" class="nft-image" onerror="this.src='${generateFallbackImage(nft.tokenId)}'">
+                        <div class="nft-info">
+                            <h4>${nft.name}</h4>
+                            <p>Token ID: ${nft.tokenId}</p>
+                        </div>
+                    </div>`
+                ).join('')}
+            </div>`;
+        
+        window.baseNFTData = nfts;
+        
+    } catch (error) {
+        console.error('Transaction parsing error:', error);
+        nftContainer.innerHTML = '<p>Error loading NFT from transaction</p>';
+    }
 }
 
 async function loadAlchemyBaseNFTs() {
