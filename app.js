@@ -369,30 +369,53 @@ async function switchToNetwork(chainId, provider = window.ethereum) {
 
 async function connectSolanaWallet() {
     try {
+        // Try Phantom wallet first
         if (typeof window.solana !== 'undefined' && window.solana.isPhantom) {
             const response = await window.solana.connect();
             userAccount = response.publicKey.toString();
-            
-            walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
-            currentNetworkSpan.textContent = 'Solana Mainnet';
-            balanceSymbol.textContent = 'SOL';
-            walletBalance.textContent = '0.0000';
-            
-            walletInfo.classList.remove('hidden');
-            connectWalletBtn.textContent = 'Connected';
-            connectWalletBtn.disabled = true;
-            
-            localStorage.setItem('walletConnected', 'true');
-            localStorage.setItem('walletAddress', userAccount);
-            localStorage.setItem('connectedNetwork', currentNetwork);
-            
-            if (currentNetwork === 'solana') {
-                document.getElementById('nftContainer').classList.remove('hidden');
-                document.getElementById('nftContainer').innerHTML = '<p>Please install Phantom wallet for Solana NFT support</p>';
-            }
-        } else {
-            window.open('https://phantom.app/', '_blank');
         }
+        // Try Coinbase Wallet for Solana
+        else if (window.coinbaseSolana) {
+            const response = await window.coinbaseSolana.connect();
+            userAccount = response.publicKey.toString();
+        }
+        // Try generic Solana provider
+        else if (window.solana) {
+            const response = await window.solana.connect();
+            userAccount = response.publicKey.toString();
+        }
+        else {
+            // Mobile detection for wallet apps
+            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                const coinbaseUrl = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`;
+                window.open(coinbaseUrl, '_blank');
+                return;
+            } else {
+                alert('Please install Phantom wallet or Coinbase Wallet for Solana');
+                return;
+            }
+        }
+        
+        // Update UI after successful connection
+        walletAddress.textContent = userAccount.substring(0, 6) + '...' + userAccount.substring(-6);
+        currentNetworkSpan.textContent = 'Solana Mainnet';
+        balanceSymbol.textContent = 'SOL';
+        walletBalance.textContent = '0.0000';
+        
+        walletInfo.classList.remove('hidden');
+        connectWalletBtn.textContent = 'Connected';
+        connectWalletBtn.disabled = true;
+        
+        localStorage.setItem('walletConnected', 'true');
+        localStorage.setItem('walletAddress', userAccount);
+        localStorage.setItem('connectedNetwork', currentNetwork);
+        localStorage.setItem('walletType', 'solana');
+        
+        if (currentNetwork === 'solana') {
+            document.getElementById('nftContainer').classList.remove('hidden');
+            document.getElementById('nftContainer').innerHTML = '<p>Solana NFT support available</p>';
+        }
+        
     } catch (error) {
         console.error('Solana wallet connection failed:', error);
         alert('Failed to connect Solana wallet');
